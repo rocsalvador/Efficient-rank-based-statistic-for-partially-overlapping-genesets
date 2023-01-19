@@ -1,1 +1,3 @@
-# Efficient-rank-based-statistic-for-partially-overlapping-genesets
+# Efficient rank-based statistic for partially overlapping gene sets
+
+Gene set enrichment analyses use rank-based statistics to test whether related genes are uniformly distributed in an ordered gene list. By testing several gene sets with defined biological functions on gene lists from a biological experiment, one can determine whether specific biological functions are significantly affected by the experiment. The goal of this thesis is to develop efficient algorithms for computing rank-based statistics for thousands of gene sets on tens of thousands of gene lists and use these as a basis for analyzing data from single-cell sequencing experiments.
