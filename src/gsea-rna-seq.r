@@ -2,23 +2,61 @@ library("reactome.db")
 library("AnnotationDbi")
 library("org.Hs.eg.db")
 
-count_matrix_csv <- read.csv("../data/GSE121212_psoriasis.csv", sep = "\t")
-count_matrix <- as.matrix(count_matrix_csv)
-ensembl_ids <- rownames(count_matrix)
+countMatrixCsv <- as.matrix(read.csv("../data/GSE121212_psoriasis.csv", sep = "\t"))
+countMatrix <- as.matrix(countMatrixCsv)
+ensemblIds <- rownames(countMatrix)
 
-ensembl2go <- mapIds(org.Hs.eg.db,
-                     keys = ensembl_ids,
-                     keytype = "ENSEMBL",
-                     column = "GO")
-print(sum(is.na(ensembl2go)))
-print(length(ensembl2go))
-ptm <- proc.time()
+xx <- as.list(org.Hs.egGO2ALLEGS)
 
-for (ensembl_id in ensembl_ids) {
-    go_id <- ensembl2go[[ensembl_id]]
-    if (!is.na(go_id)) {
-        reactome_id <- reactomeGO2REACTOMEID[[go_id]]
+# Get ENSEMBL gene IDs for all the gene sets in GO
+geneSets <- lapply(xx[1:1], function(x) {
+    mapIds(org.Hs.eg.db, keys = x, keytype = "ENTREZID", column = "ENSEMBL")
+})
+
+nGenes <- length(rownames(countMatrix))
+
+sortedCountMatrix <- apply(countMatrix, 2, function(x) {
+    sort(x, decreasing = TRUE, index.return = TRUE)
+})
+
+resultspMatrix <- matrix(ncol = length(colnames(countMatrix)),
+                         nrow = length(geneSets))
+resultsnMatrix <- matrix(ncol = length(colnames(countMatrix)),
+                         nrow = length(geneSets))
+
+i <- 0
+for (geneSet in geneSets) {
+    appearances <- lapply(rownames(countMatrix), function(x) {
+        return(x %in% geneSet)
+    })
+    names(appearances) <- rownames(countMatrix)
+    nAppearances <- length(appearances[appearances == TRUE])
+    negVal <- - sqrt(nAppearances / (nGenes - nAppearances))
+    posVal <- sqrt((nGenes - nAppearances) / nAppearances)
+
+    j <- 0
+    for (sample in sortedCountMatrix) {
+        first <- TRUE
+        for (geneId in names(sample$x)) {
+            currentVal <- 0
+            if (appearances[[geneId]]) currentVal <- currentVal + posVal
+            else currentVal <- currentVal + negVal
+            if (first) {
+                first <- FALSE
+                minVal <- currentVal
+                maxVal <- currentVal
+            }
+            minVal <- min(c(minVal, currentVal))
+            maxVal <- max(c(maxVal, currentVal))
+        }
+        resultspMatrix[i, j] <- maxVal
+        resultsnMatrix[i, j] <- minVal
+        j <- j + 1
+        print(i)
+        print(j)
     }
+
+    i <- i + 1
 }
 
-print(proc.time() - ptm)
+print(resultsnMatrix)

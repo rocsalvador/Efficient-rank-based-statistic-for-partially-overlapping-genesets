@@ -2,4 +2,6 @@ data/healthy.h5ad
 src/.RData
 src/.Rhistory
 report/report.*
+texput.log
 Papers
+src/GSEA_script_mr_IMM_AGE-PS.py
