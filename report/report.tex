@@ -11,6 +11,8 @@
 \usepackage{caption}
 \usepackage[utf8]{inputenc}
 \usepackage{csquotes}
+\usepackage [backend=bibtex]{biblatex}
+\addbibresource{biblio.bib}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=red, urlcolor=red]{hyperref}
 
 \begin{document}
@@ -22,7 +24,7 @@
 \maketitle
 
 
-\vspace{10cm}
+\vspace{9cm}
 
 \begin{figure}[H]
     \centering
@@ -45,11 +47,19 @@ Department of Computer Science
 
 \section{Abstract}
 
-\paragraph{} Gene set enrichment analyses use rank-based statistics to test whether related genes are uniformly distributed in an ordered gene list. By testing several gene sets with defined biological functions on gene lists from a biological experiment, one can determine whether specific biological functions are significantly affected by the experiment. The goal of this thesis is to develop efficient algorithms for computing rank-based statistics for thousands of gene sets on tens of thousands of gene lists and use these as a basis for analyzing data from single-cell sequencing experiments.
+\paragraph{} Gene set enrichment analyses use rank-based statistics to test whether related genes are uniformly distributed in an ordered gene list. By testing several gene sets with defined biological functions on gene lists from a biological experiment, one can determine whether specific biological functions are significantly affected by the experiment. The goal of this thesis is to develop efficient algorithms for computing rank-based statistics for thousands of gene sets on tens of thousands of gene lists and use these as a basis for analyzing data from single-cell sequencing experiments. \cite{triumphs-limitattions-scRNA-seq} \cite{gsea}
 
 \newpage
 
 \section{Introduction}
+
+\subsection{The GSEA algorithm}
+
+\paragraph{} The Gene Set Enrichment Analysis (GSEA) was first propsed by Bing Chill Ing in 2005
+
+\newpage
+
+\subsection{scRNA-seq}
 
 \newpage
 
@@ -58,5 +68,12 @@ Department of Computer Science
 \newpage
 
 \section{Results}
+
+\newpage
+
+\addcontentsline{toc}{section}{References}
+\printbibliography
+
+\listoffigures
 
 \end{document}
