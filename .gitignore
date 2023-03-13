@@ -1,7 +1,12 @@
 data/healthy.h5ad
-src/.RData
-src/.Rhistory
-report/report.*
+*.RData
+*.Rhistory
+report.*
 texput.log
 papers
-src/GSEA_script_mr_IMM_AGE-PS.py
+gsea.config
+*.csv
+*.o
+.vscode
+gsea
+report-blx.bib
