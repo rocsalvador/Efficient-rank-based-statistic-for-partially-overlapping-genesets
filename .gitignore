@@ -3,5 +3,5 @@ src/.RData
 src/.Rhistory
 report/report.*
 texput.log
-Papers
+papers
 src/GSEA_script_mr_IMM_AGE-PS.py
