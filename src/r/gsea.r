@@ -1,6 +1,7 @@
 library("reactome.db")
 library("AnnotationDbi")
 library("org.Hs.eg.db")
+library("Rcpp")
 
 rpm <- function(expr) {
     sums <- apply(expr, 2, sum)
@@ -8,9 +9,8 @@ rpm <- function(expr) {
     return(sweep(expr, 2, 10**6, "*"))
 }
 
-countMatrixCsv <- as.matrix(read.csv("../data/GSE121212_psoriasis.csv",
+countMatrix <- as.matrix(read.csv("./data/GSE121212_psoriasis.csv",
                             sep = "\t"))
-countMatrix <- as.matrix(countMatrixCsv)
 countMatrix <- rpm(countMatrix)
 # TODO remove rows with only 0
 # TODO rpm
@@ -26,6 +26,7 @@ geneSets <- lapply(xx[1:200], function(x) {
 
 N <- nrow(countMatrix)
 enrichmentScore <- matrix(nrow = length(geneSets), ncol = ncol(countMatrix))
+
 
 # TODO itearte each sample
 for (i in seq_len(ncol(countMatrix))) {

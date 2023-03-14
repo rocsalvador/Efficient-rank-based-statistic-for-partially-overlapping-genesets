@@ -1,24 +1,19 @@
-SRC_DIR := src
-OBJ_DIR := obj
-SRC_FILES := $(wildcard $(SRC_DIR)/*.cc)
-OBJ_FILES := $(patsubst $(SRC_DIR)/%.cc,$(OBJ_DIR)/%.o,$(SRC_FILES))
+CCDIR := src/cc
+RCPPDIR := src/rcpp
 
-LDFLAGS := -lpthread
-# CCFLAGS := ...
-CXXFLAGS := -O3 -Wall
-TARGET := gsea
-CC := g++
+all:
+	@make -C $(CCDIR)
+	@make -C $(RCPPDIR)
 
-all: obj_dir $(TARGET)
+cc:
+	@make -C $(CCDIR)
 
-$(TARGET): $(OBJ_FILES)
-	$(CC) $(LDFLAGS) -o $@ $^
+runcc:
+	@$(CCDIR)/gsea
 
-obj_dir:
-	@if [ ! -d $(OBJ_DIR) ]; then mkdir -p $(OBJ_DIR); fi
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc
-	$(CC) $(CCFLAGS) $(CXXFLAGS) -c -o $@ $<
+rcpp:
+	@make -C $(RCPPDIR)
 
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	@make clean -C $(CCDIR)
+	@make clean -C $(RCPPDIR)

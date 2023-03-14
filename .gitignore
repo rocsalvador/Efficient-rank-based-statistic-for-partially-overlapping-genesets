@@ -10,3 +10,4 @@ gsea.config
 .vscode
 gsea
 report-blx.bib
+*.so
