@@ -8,15 +8,18 @@
 #include <string>
 #include <cmath>
 #include <thread>
+#include <chrono>
+#include <cassert>
 using namespace std;
+using namespace chrono;
+
+struct GeneSample {
+    string geneId;
+    double count;
+};
 
 class Gsea {
 private:
-    struct GeneSample {
-        string geneId;
-        double count;
-    };
-
     string expressionMatrixFilename;
     string geneSetsFilename;
     string outputFilename;
@@ -54,6 +57,8 @@ private:
 
 public:
     Gsea();
+    
+    Gsea(unordered_map<string, unordered_set<string>>& geneSets, vector<vector<GeneSample>>& expressionMatrix);
 
     void run();
 

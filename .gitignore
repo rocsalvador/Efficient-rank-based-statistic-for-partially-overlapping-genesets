@@ -11,3 +11,6 @@ gsea.config
 gsea
 report-blx.bib
 *.so
+gseacc
+DESCRIPTION
+NAMESPACE
