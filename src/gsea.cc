@@ -2,15 +2,39 @@
 
 void Gsea::readConfig() {
     ifstream file("./gsea.config");
-    string aux;
-    file >> aux >> expressionMatrixFilename;
-    file >> aux >> expressionMatrixSep;
-    if (expressionMatrixSep == 't') expressionMatrixSep = '\t';
-    file >> aux >> geneSetsFilename;
-    file >> aux >> geneSetsSep;
-    file >> aux >> outputFilename;
-    file >> aux >> outputSep;
-    file >> aux >> nThreads;
+    if (!file.is_open()) {
+        file.close();
+        ofstream outFile("./gsea.config");
+        string aux;
+        outFile << "expression-matrix-file:     expression-matrix.csv" << endl;
+        outFile << "sep:                        ," << endl;
+        outFile << "gene-sets-file:             gene-sets.csv" << endl;
+        outFile << "sep:                        ," << endl;
+        outFile << "output-file:                results.csv" << endl;
+        outFile << "sep:                        ," << endl;
+        outFile << "threads-used:               0" << endl;
+        outFile << "normalized-data:            0" << endl;
+        expressionMatrixFilename = "expression-matrix.csv";
+        expressionMatrixSep = ',';
+        geneSetsFilename = "gene-sets.csv";
+        geneSetsSep = ',';
+        outputFilename = "results.csv";
+        outputSep = ',';
+        nThreads = 0;
+        normalizedData = false;
+        outFile.close();
+    } else {
+        string aux;
+        file >> aux >> expressionMatrixFilename;
+        file >> aux >> expressionMatrixSep;
+        if (expressionMatrixSep == 't') expressionMatrixSep = '\t';
+        file >> aux >> geneSetsFilename;
+        file >> aux >> geneSetsSep;
+        file >> aux >> outputFilename;
+        file >> aux >> outputSep;
+        file >> aux >> nThreads;
+        file >> aux >> normalizedData;
+    }
 
     if (nThreads == 0) nThreads = thread::hardware_concurrency();
 
@@ -24,6 +48,7 @@ void Gsea::readConfig() {
     cout << "output-file:            " << outputFilename << endl;
     cout << "sep:                    " << outputSep << endl;
     cout << "threads-used:           " << nThreads << endl;
+    cout << "normalized-data:        " << normalizedData << endl;
     cout << endl;
 
     file.close();
@@ -102,6 +127,7 @@ Gsea::Gsea(unordered_map<string, unordered_set<string>>& geneSets, vector<vector
     this->expressionMatrix = expressionMatrix;
     nGenes = expressionMatrix.size();
     if (nGenes > 0)
+        for (GeneSample geneSample : expressionMatrix[0]) sampleNames.push_back(geneSample.sampleId);
         nSamples = expressionMatrix[0].size();
     results = vector<vector<double>> (geneSets.size(), vector<double> (nSamples));
 }
@@ -145,26 +171,17 @@ void Gsea::sortColumns() {
 }
 
 void Gsea::enrichmentScore() {
-    auto it = geneSets.begin();
-    for (uint k = 0; k < geneSets.size(); ++k) {
-        double geneSetSize = it->second.size();
-        double posScore = sqrt((nGenes - geneSetSize) / geneSetSize);
-        double negScore = - sqrt((geneSetSize / (nGenes - geneSetSize)));
-        for (uint j = 0; j < nSamples; ++j) {
-            double currentValue = 0;
-            double maxValue = 0;
-            for (uint i = 0; i < nGenes; ++i) {
-                if (it->second.find(expressionMatrix[i][j].geneId) != it->second.end()) 
-                    currentValue += posScore;
-                else
-                    currentValue += negScore;
-                if (i == 0) maxValue = currentValue;
-                maxValue = max(currentValue, maxValue);
-            }
-            results[k][j] = maxValue;
-        }
-        it = next(it);
+    uint samplesPerThread = nSamples / nThreads;
+    uint offset = nSamples % samplesPerThread;
+    vector<thread> threads = vector<thread> (nThreads);
+    for (uint i = 0; i < nThreads; ++i) {
+        uint startSample = i * samplesPerThread;
+        uint endSample = startSample + samplesPerThread;
+        if (i == nThreads - 1) endSample += offset;
+        threads[i] = thread(&Gsea::enrichmentScoreJob, this, startSample, endSample);
     }
+
+    for (thread& t : threads) t.join();
 }
 
 void Gsea::enrichmentScoreJob(uint startSample, uint endSample) {
@@ -193,8 +210,12 @@ void Gsea::enrichmentScoreJob(uint startSample, uint endSample) {
 
 void Gsea::writeResults() {
     ofstream file(outputFilename);
-    for (string& sampleName : sampleNames)
-        file << outputSep << sampleName;
+    bool first = true;
+    for (string& sampleName : sampleNames) {
+        if (first) first = false;
+        else file << outputSep;
+        file << sampleName;
+    }
     file << endl;
 
     vector<string> geneSetNames = vector<string> (geneSets.size());
@@ -220,30 +241,22 @@ void Gsea::run() {
     cout << "################################" << endl;
     cout << "# GSEA input size              #" << endl;
     cout << "################################" << endl;
-    cout << "Sample genes: " << nGenes << endl;
-    cout << "Samples:      " << nSamples << endl;
-    cout << "Gene sets:    " << geneSets.size() << endl;
+    cout << "Sampled genes: " << nGenes << endl;
+    cout << "Samples:       " << nSamples << endl;
+    cout << "Gene sets:     " << geneSets.size() << endl;
     cout << endl;
 
     system_clock::time_point startGSEATime = system_clock::now();
 
-    rpm();
+    if (!normalizedData) {
+        rpm();
 
-    meanCenter();
+        meanCenter();
+    }
 
     sortColumns();
 
-    uint samplesPerThread = nSamples / nThreads;
-    uint offset = nSamples % samplesPerThread;
-    vector<thread> threads = vector<thread> (nThreads);
-    for (uint i = 0; i < nThreads; ++i) {
-        uint startSample = i * samplesPerThread;
-        uint endSample = startSample + samplesPerThread;
-        if (i == nThreads - 1) endSample += offset;
-        threads[i] = thread(&Gsea::enrichmentScoreJob, this, startSample, endSample);
-    }
-
-    for (thread& t : threads) t.join();
+    enrichmentScore();
 
     system_clock::time_point endGSEATime = system_clock::now();
     cout << "Elapsed time: " << duration_cast<milliseconds> (endGSEATime - startGSEATime).count() / 1000.0 << " s" << endl;

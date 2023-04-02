@@ -16,6 +16,7 @@ using namespace chrono;
 struct GeneSample {
     string geneId;
     double count;
+    string sampleId;
 };
 
 class Gsea {
@@ -29,6 +30,8 @@ private:
 
     uint nThreads;
 
+    bool normalizedData;
+
     unordered_map<string, unordered_set<string>> geneSets;
 
     vector<vector<GeneSample>> expressionMatrix;
@@ -38,6 +41,8 @@ private:
 
     uint nGenes;
     uint nSamples;
+
+    uint nGeneSets;
 
     static bool geneSampleComp(const GeneSample& g1, const GeneSample& g2);
 

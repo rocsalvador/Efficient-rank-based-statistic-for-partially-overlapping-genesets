@@ -1,14 +1,16 @@
 SRC_DIR := src
-TARGET := gsea
+TARGET := gseacc
 
-install:
-	@rm -rf gseacc
-	@R -e 'library("Rcpp");filenames <- c(Sys.glob("src/*.cc"), Sys.glob("src/*.hh"));Rcpp.package.skeleton("gseacc", cpp_files = filenames)'
-	@R CMD build gseacc
-	@R CMD INSTALL gseacc_1.0.tar.gz 
+build:
+	rm -rf $(TARGET)
+	R -e 'library("Rcpp");filenames <- c(Sys.glob("$(SRC_DIR)/*.cc"), Sys.glob("$(SRC_DIR)/*.hh"));Rcpp.package.skeleton("$(TARGET)", cpp_files = filenames)'
+	R CMD build $(TARGET)
+
+install: build
+	R CMD INSTALL $(TARGET)_1.0.tar.gz 
 
 run:
-	Rscript $(SRC_DIR)/$(TARGET).r
+	Rscript $(SRC_DIR)/gsea.r
 
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET).so
+	rm -rf $(TARGET)

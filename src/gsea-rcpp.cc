@@ -23,9 +23,11 @@ void gsea(List geneSetsRcpp, IntegerMatrix countMatrixRcpp) {
     vector<vector<GeneSample>> countMatrix (nGenes, vector<GeneSample> (nSamples));
     CharacterVector genesIdsRcpp = rownames(countMatrixRcpp);
     vector<string> genesIds = as<vector<string>> (genesIdsRcpp);
+    CharacterVector sampleIdsRcpp = colnames(countMatrixRcpp);
+    vector<string> sampleIds = as<vector<string>> (sampleIdsRcpp);
     for (int i = 0; i < nGenes; ++i) {
         for (int j = 0; j < nSamples; ++j) {
-            countMatrix[i][j] = GeneSample{genesIds[i], double(countMatrixRcpp(i, j))};
+            countMatrix[i][j] = GeneSample{genesIds[i], double(countMatrixRcpp(i, j)), sampleIds[j]};
         }
     }
 
