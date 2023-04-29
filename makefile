@@ -12,5 +12,8 @@ install: build
 run:
 	Rscript $(SRC_DIR)/gsea.r
 
+run-sc:
+	Rscript src/scrna-gsea.r &> log.txt
+
 clean:
-	rm -rf $(TARGET)
+	rm -rf $(TARGET) $(TARGET)_1.0.tar.gz

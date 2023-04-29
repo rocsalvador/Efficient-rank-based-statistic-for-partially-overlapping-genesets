@@ -14,10 +14,10 @@ using namespace std;
 using namespace chrono;
 
 struct GeneSample {
-    string geneId;
-    double count;
-    string sampleId;
+    uint32_t geneId;
+    float count;
 };
+
 
 class Gsea {
 private:
@@ -27,24 +27,33 @@ private:
     char expressionMatrixSep;
     char geneSetsSep;
     char outputSep;
+    uint ioutput;
 
     uint nThreads;
+    uint logThread;
 
     bool normalizedData;
+    bool scRna;
 
     unordered_map<string, unordered_set<string>> geneSets;
 
     vector<vector<GeneSample>> expressionMatrix;
-    vector<string> sampleNames;
+    vector<string> sampleIds;
+    vector<string> geneIds;
 
-    vector<vector<double>> results;
+    vector<vector<float>> results;
 
     uint nGenes;
     uint nSamples;
-
     uint nGeneSets;
 
+    system_clock::time_point startGSEATime;
+
     static bool geneSampleComp(const GeneSample& g1, const GeneSample& g2);
+
+    void readRna();
+
+    void readScRna();
 
     void readConfig();
 
@@ -53,6 +62,8 @@ private:
     void meanCenter();
 
     void sortColumns();
+
+    void sortColumnsJob(uint columnStart, uint columnEnd);
 
     void enrichmentScore();
 
@@ -63,7 +74,10 @@ private:
 public:
     Gsea();
     
-    Gsea(unordered_map<string, unordered_set<string>>& geneSets, vector<vector<GeneSample>>& expressionMatrix);
+    Gsea(unordered_map<string, unordered_set<string>>& geneSets,
+         vector<vector<GeneSample>>& expressionMatrix,
+         vector<string>& geneIds,
+         vector<string>& sampleIds);
 
     void run();
 
