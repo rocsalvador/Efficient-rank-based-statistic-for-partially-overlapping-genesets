@@ -1,3 +1,6 @@
+#ifndef GSEA_HH
+#define GSEA_HH
+
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
@@ -28,6 +31,7 @@ private:
     char geneSetsSep;
     char outputSep;
     uint ioutput;
+    uint batchSize;
 
     uint nThreads;
     uint logThread;
@@ -55,19 +59,25 @@ private:
 
     void readScRna();
 
+    void runScRna();
+
+    void runRna();
+
     void readConfig();
 
     void rpm();
 
     void meanCenter();
 
-    void sortColumns();
+    void sortGenes();
 
     void sortColumnsJob(uint columnStart, uint columnEnd);
 
     void enrichmentScore();
 
     void enrichmentScoreJob(uint sampleStart, uint sampleEnd);
+
+    void scEnrichmentScoreJob(uint lineStart, uint lineEnd);
 
     void writeResults();
 
@@ -83,3 +93,5 @@ public:
 
     ~Gsea();
 };
+
+#endif

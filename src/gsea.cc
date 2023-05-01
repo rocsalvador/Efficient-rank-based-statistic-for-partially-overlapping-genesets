@@ -1,5 +1,6 @@
 #include "gsea.hh"
 #include <bits/chrono.h>
+#include <cassert>
 #include <cstddef>
 #include <fstream>
 #include <thread>
@@ -30,6 +31,7 @@ void Gsea::readConfig() {
         outFile << "normalized-data:            0" << endl;
         outFile << "ioutput:                    100" << endl;
         outFile << "scrna:                      0" << endl;
+        outFile << "batch-size:                 50" << endl;
 
         expressionMatrixFilename = "expression-matrix.csv";
         expressionMatrixSep = ',';
@@ -41,6 +43,7 @@ void Gsea::readConfig() {
         normalizedData = false;
         ioutput = 0;
         scRna = 0;
+        batchSize = 50;
         outFile.close();
     } else {
         string aux;
@@ -55,6 +58,7 @@ void Gsea::readConfig() {
         file >> aux >> normalizedData;
         file >> aux >> ioutput;
         file >> aux >> scRna;
+        file >> aux >> batchSize;
     }
 
     if (nThreads == 0) nThreads = thread::hardware_concurrency();
@@ -70,6 +74,7 @@ void Gsea::readConfig() {
     cout << "normalized-data:        " << normalizedData << endl;
     cout << "ioutput:                " << ioutput << endl;
     cout << "scrna:                  " << scRna << endl;
+    cout << "batch-size:             " << batchSize << endl;
     cout << endl;
 
     file.close();
@@ -80,8 +85,8 @@ Gsea::Gsea() {
 
     readConfig();
 
-    if (scRna) readScRna();
-    else readRna();
+    if (!scRna) readRna();
+    else readScRna();
 
     system_clock::time_point endIOTime = system_clock::now();
     cout << "IO elapsed time: " << duration_cast<milliseconds> (endIOTime - startIOTime).count() / 1000.0 << " s" << endl;
@@ -91,6 +96,7 @@ void Gsea::readRna() {
     ifstream file(expressionMatrixFilename);
     string line;
 
+    // Read first row (sample ids)
     getline(file, line);
     stringstream ssLine(line);
     string colName;
@@ -99,10 +105,12 @@ void Gsea::readRna() {
         sampleIds.push_back(colName);
         ++i;
     }
+
     i = 0;
     while(getline(file, line)) {
         stringstream ssLine(line);
 
+        // Read first column (gene id)
         string rowName;
         getline(ssLine, rowName, expressionMatrixSep);
         geneIds.push_back(rowName);
@@ -152,46 +160,11 @@ void Gsea::readRna() {
 }
 
 void Gsea::readScRna() {
-    ifstream file(expressionMatrixFilename);
+    // Read gene sets file
+    ifstream file = ifstream(geneSetsFilename);
     string line;
-
-    getline(file, line);
-    stringstream ssLine(line);
-    string colName;
     uint i = 0;
-    while(getline(ssLine, colName, expressionMatrixSep)){
-        geneIds.push_back(colName);
-        ++i;
-    }
-    i = 0;
-    expressionMatrix = vector<vector<GeneSample>> (geneIds.size(), vector<GeneSample> ());
     while(getline(file, line)) {
-        stringstream ssLine(line);
-
-        string rowName;
-        getline(ssLine, rowName, expressionMatrixSep);
-        sampleIds.push_back(rowName);
-
-        string valueStr;
-        uint j = 0;
-        while(getline(ssLine, valueStr, expressionMatrixSep)){
-            float count = stof(valueStr);
-            expressionMatrix[j].push_back({j, count});
-            ++j;
-        }
-        ++i;
-    }
-
-    nGenes = expressionMatrix.size();
-    if (nGenes > 0)
-        nSamples = expressionMatrix[0].size();
-    file.close();
-
-
-    file = ifstream(geneSetsFilename);
-    i = 0;
-    while(getline(file, line)) {
-        if (i == 1000) break;
         stringstream ssLine(line);
 
         string rowName;
@@ -207,7 +180,113 @@ void Gsea::readScRna() {
     }
     file.close();
 
-    results = vector<vector<float>> (geneSets.size(), vector<float> (nSamples));
+    file = ifstream(expressionMatrixFilename);
+
+    // Read first row (gene ids)
+    getline(file, line);
+    stringstream ssLine(line);
+    string colName;
+    i = 0;
+    while(getline(ssLine, colName, expressionMatrixSep)){
+        geneIds.push_back(colName);
+        ++i;
+    }
+    nGenes = geneIds.size();
+
+    nSamples = 0;
+    while(getline(file, line)) ++nSamples;
+
+    file.close();
+}
+
+void Gsea::runScRna() {
+    ifstream file = ifstream(expressionMatrixFilename);
+    ofstream oFile = ofstream(outputFilename);
+    string line;
+
+    // Ignore first row, already read
+    getline(file, line);
+
+    bool first = true;
+    for (auto geneSet : geneSets) {
+        if (first) first = false;
+        else oFile << ",";
+        oFile << geneSet.first;
+    }
+    oFile << endl;
+
+    uint i = 0;
+    uint nLines = batchSize;
+    uint totalLines = nThreads * nLines;
+    expressionMatrix = vector<vector<GeneSample>> (totalLines);
+    vector<string> sampleNames = vector<string> (totalLines);
+    results = vector<vector<float>> (totalLines, vector<float> (geneSets.size()));
+    first = true;
+    while(getline(file, line)) {
+        stringstream ssLine(line);
+
+        // Read first column (sample id)
+        string rowName;
+        getline(ssLine, rowName, expressionMatrixSep);
+        sampleNames[i % totalLines] = rowName;
+
+        string valueStr;
+        uint j = 0;
+        while(getline(ssLine, valueStr, expressionMatrixSep)){
+            if (first) expressionMatrix[i % totalLines].push_back({j, stof(valueStr)});
+            else expressionMatrix[i % totalLines][j] = {j, stof(valueStr)};
+            ++j;
+        }
+
+        if (i != 0 and i % (totalLines - 1) == 0) {
+            first = false;
+            vector<thread> threads = vector<thread> (nThreads);
+            for (uint t = 0; t < nThreads; ++t) {
+                uint startLine = nLines * t;
+                uint endLine = startLine + nLines;
+                threads[t] = thread(&Gsea::scEnrichmentScoreJob, this, startLine, endLine);
+            }
+
+            for (thread& t : threads) t.join();
+
+            for (uint t = 0; t < totalLines; ++t) {
+                oFile << sampleNames[t];
+                for (uint l = 0; l < geneSets.size(); ++l) {
+                    oFile << results[t][l] << ",";
+                }
+                oFile << endl;
+            }
+            system_clock::time_point now = system_clock::now();
+            printTime(now);
+            cout << " Sample " << i;
+            uint ETA = (nSamples - i) * duration_cast<milliseconds> (now - startGSEATime).count() / (i * 60 * 1000) ;
+            cout << " ETA: " << ETA << " min" << endl;
+        }
+        ++i;
+    }
+
+    uint offset = i % totalLines;
+    uint linesPerThread = offset / nThreads;
+    uint offsetLines = linesPerThread % nThreads;
+    vector<thread> threads = vector<thread> (nThreads);
+    for (uint t = 0; t < nThreads; ++t) {
+        uint startLine = linesPerThread * t;
+        uint endLine = startLine + linesPerThread;
+        if (t == nThreads - 1) endLine += offsetLines;
+        threads[t] = thread(&Gsea::scEnrichmentScoreJob, this, startLine, endLine);
+    }
+
+    for (thread& t : threads) t.join();
+
+    for (uint t = 0; t < offset; ++t) {
+        oFile << sampleNames[t];
+        for (uint l = 0; l < geneSets.size(); ++l) {
+            oFile << results[t][l] << ",";
+        }
+        oFile << endl;
+    }
+
+    file.close();
 }
 
 
@@ -264,7 +343,7 @@ void Gsea::sortColumnsJob(uint startSample, uint endSample) {
     }
 }
 
-void Gsea::sortColumns() {
+void Gsea::sortGenes() {
     uint samplesPerThread = nSamples / nThreads;
     uint offset = nSamples % samplesPerThread;
     vector<thread> threads = vector<thread> (nThreads);
@@ -272,7 +351,9 @@ void Gsea::sortColumns() {
         uint startSample = i * samplesPerThread;
         uint endSample = startSample + samplesPerThread;
         if (i == nThreads - 1) endSample += offset;
+
         threads[i] = thread(&Gsea::sortColumnsJob, this, startSample, endSample);
+
         if (i == nThreads - 1) {
             auto threadId = threads[i].get_id();
             logThread = *static_cast<unsigned int*>(static_cast<void*>(&threadId));
@@ -313,14 +394,12 @@ void Gsea::enrichmentScoreJob(uint startSample, uint endSample) {
             float currentValue = 0;
             float maxValue = 0;
             for (uint i = 0; i < nGenes; ++i) {
-                if (expressionMatrix[i][j].count != 0) {
-                    if (it->second.find(geneIds[expressionMatrix[i][j].geneId]) != it->second.end()) {
-                        currentValue += posScore;
-                    } else currentValue += negScore;
+                if (it->second.find(geneIds[expressionMatrix[i][j].geneId]) != it->second.end()) {
+                    currentValue += posScore;
+                } else currentValue += negScore;
 
-                    if (i == 0) maxValue = currentValue;
-                    maxValue = max(currentValue, maxValue);
-                } else break;
+                if (i == 0) maxValue = currentValue;
+                maxValue = max(currentValue, maxValue);
             }
             results[k][j] = maxValue;
         }
@@ -331,6 +410,36 @@ void Gsea::enrichmentScoreJob(uint startSample, uint endSample) {
 
             uint ETA = (geneSets.size() - k) * duration_cast<milliseconds> (now - startGSEATime).count() / (k * 60 * 1000) ;
             cout << " ETA: " << ETA << " min" << endl;
+        }
+        it = next(it);
+    }
+}
+
+
+void Gsea::scEnrichmentScoreJob(uint lineStart, uint lineEnd) {
+    for (uint i = lineStart; i < lineEnd; ++i) {
+        sort(expressionMatrix[i].begin(), expressionMatrix[i].end(), &Gsea::geneSampleComp);
+    }
+    auto threadId = this_thread::get_id();
+    for (uint i = lineStart; i < lineEnd; ++i) {
+        auto it = geneSets.begin();
+        for (uint k = 0; k < geneSets.size(); ++k, ++it) {
+            uint geneSetSize = it->second.size();
+            float posScore = sqrt((nGenes - geneSetSize) / geneSetSize);
+            float negScore = - sqrt((geneSetSize / (nGenes - geneSetSize)));
+            float currentValue = 0;
+            float maxValue = 0;
+            for (uint j = 0; j < expressionMatrix[i].size(); ++j) {
+                if (expressionMatrix[i][j].count == 0) break;
+
+                if (it->second.find(geneIds[expressionMatrix[i][j].geneId]) != it->second.end()) {
+                    currentValue += posScore;
+                } else currentValue += negScore;
+
+                if (j == 0) maxValue = currentValue;
+                maxValue = max(currentValue, maxValue);
+            }
+            results[i][k] = maxValue;
         }
     }
 }
@@ -364,6 +473,22 @@ void Gsea::writeResults() {
     file.close();
 }
 
+void Gsea::runRna() {
+    if (!normalizedData) {
+        rpm();
+
+        meanCenter();
+    }
+
+    sortGenes();
+
+    enrichmentScore();
+
+    writeResults();
+
+    cout << "Results written in " << outputFilename << endl;
+}
+
 void Gsea::run() {
     cout << "[GSEA input size]" << endl;
     cout << "Sampled genes: " << nGenes << endl;
@@ -376,22 +501,10 @@ void Gsea::run() {
     printTime(startGSEATime);
     cout << " Started GSEA" << endl;
 
-    if (!normalizedData) {
-        rpm();
+    if (scRna) runScRna();
+    else runRna();
 
-        meanCenter();
-    }
-
-    sortColumns();
-
-    enrichmentScore();
-
-    system_clock::duration elapsedTime = system_clock::now() - startGSEATime;
-    cout << "Elapsed time: " << elapsedTime.count() << "s" << endl;
-
-    writeResults();
-
-    cout << "Results written in " << outputFilename << endl;
+    cout << "Elapsed time: " << duration_cast<minutes> (system_clock::now() - startGSEATime).count() << " min" << endl;
 }
 
 Gsea::~Gsea() {}
