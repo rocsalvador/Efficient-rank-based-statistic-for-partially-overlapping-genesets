@@ -47,7 +47,7 @@ Department of Computer Science
 
 \section{Abstract}
 
-\paragraph{} Gene set enrichment analyses use rank-based statistics to test whether related genes are uniformly distributed in an ordered gene list. By testing several gene sets with defined biological functions on gene lists from a biological experiment, one can determine whether specific biological functions are significantly affected by the experiment. The goal of this thesis is to develop efficient algorithms for computing rank-based statistics for thousands of gene sets on tens of thousands of gene lists and use these as a basis for analyzing data from single-cell sequencing experiments. \cite{triumphs-limitattions-scRNA-seq} \cite{gsea}
+\paragraph{} Gene set enrichment analyses use rank-based statistics to test whether related genes are uniformly distributed in an ordered gene list. One can determine whether the experiment significantly affects specific biological functions by testing several gene sets with defined biological functions on gene lists from a biological experiment. This thesis aims to develop efficient algorithms for computing rank-based statistics for thousands of gene sets on tens of thousands of gene lists and use these as a basis for analyzing data from single-cell sequencing experiments. \cite{triumphs-limitattions-scRNA-seq} \cite{gsea}
 
 \newpage
 
@@ -55,15 +55,86 @@ Department of Computer Science
 
 \subsection{The GSEA algorithm}
 
-\paragraph{} The Gene Set Enrichment Analysis (GSEA) was first propsed by Bing Chill Ing in 2005
+\paragraph{} The Gene Set Enrichment Analysis (GSEA) algorithm is a widely used computational method for analyzing gene expression data to identify biological pathways or gene sets that are significantly associated with a particular phenotype or condition.
+
+GSEA was first conceptualized by Dr. Jill P. Mesirov and her colleagues at the Broad Institute of MIT and Harvard in 2003. They proposed a novel approach that would identify coordinated changes in gene expression within a predefined gene set, rather than focusing on individual genes.
+
+The GSEA algorithm was initially developed as a permutation-based method that compared the distribution of gene expression values for genes within a predefined gene set against randomly generated gene sets. This allowed for identifying gene sets significantly enriched or depleted in samples of interest.
+
+The algorithm has undergone several refinements to improve its statistical power and computational efficiency. For example, introducing the "leading edge" concept helped identify the subset of genes within a gene set that contributed most significantly to the enrichment score, leading to increased sensitivity.
+
+GSEA gained widespread adoption in computational biology and became a standard tool for pathway analysis in gene expression studies. It has been widely used in various applications, including cancer research, drug discovery, and understanding biological mechanisms underlying complex diseases.
+
+The GSEA algorithm has been extended beyond gene expression data to other types of omics data, such as proteomics and metabolomics, allowing for integrative analysis of multi-omics datasets and enabling a more comprehensive understanding of complex biological systems.
+
+In recent years, several variants and improvements to the GSEA algorithm have been proposed, including network-based GSEA, single-sample GSEA, and GSEA with covariate adjustment, among others, to enhance its utility in different research contexts and improve its performance.
+
+\subsection{GSEA algorithm steps}
+
+\paragraph{} The Gene Set Enrichment Analysis (GSEA) algorithm follows several vital steps:
+
+\begin{enumerate}
+    \item Gene Set Collection: Define a collection of predefined gene sets or pathways, such as gene ontology terms, molecular pathways, or curated gene sets, that represent biologically relevant gene groups.
+
+    \item Enrichment Score Calculation: Calculate an enrichment score for each gene set, which measures the degree to which the genes in a gene set are coordinately upregulated or downregulated in samples of interest. This is typically done using a statistical metric, such as the Kolmogorov-Smirnov statistic, by comparing the observed distribution of gene expression values for genes in the gene set against a null distribution.
+
+    \item Statistical Significance Assessment: Assess the statistical significance of the enrichment scores by comparing them to enrichment scores obtained from randomly generated gene sets through permutation or resampling. This determines whether a gene set is significantly enriched or depleted in the samples of interest.
+
+    \item Multiple Testing Correction: Correct for multiple hypothesis testing to control for false discovery rate (FDR) or family-wise error rate (FWER) to reduce the likelihood of spurious results due to multiple comparisons.
+
+    \item Interpretation of Results: Interpret the results by examining the enriched gene sets and their associated statistics, such as the enrichment score, nominal p-value, and FDR or FWER-adjusted p-value, to identify biologically meaningful gene sets that are significantly associated with the phenotype or condition of interest.
+
+    \item Visualization and Follow-up Analysis: Visualize the results using plots, such as enrichment plots or heatmaps, to gain insights into gene expression patterns within enriched gene sets. Follow-up analyses, such as functional annotation, pathway enrichment, or network analysis, may also be performed to interpret further and validate the results.
+\end{enumerate}
 
 \newpage
 
 \subsection{scRNA-seq}
 
+\paragraph{} Single-cell RNA sequencing (scRNA-seq) experiments are a cutting-edge molecular biology technique that allows researchers to profile gene expression at the level of individual cells in a high-throughput and high-resolution manner. In scRNA-seq experiments, RNA molecules are sequenced from individual cells, providing insights into the transcriptional profile of each cell, which can help to unravel the complexity and diversity of cellular populations within a tissue or organism.
+
+The basic steps involved in scRNA-seq experiments typically include:
+
+\begin{itemize}
+    \item Cell Isolation: Cells of interest are isolated from a tissue or organism using various methods, such as enzymatic digestion, mechanical dissociation, or fluorescence-activated cell sorting (FACS), to obtain a single-cell suspension.
+
+    \item Reverse Transcription: Each cell is then lysed, and its RNA is reverse-transcribed into complementary DNA (cDNA) molecules. Depending on the experimental design and research question, reverse transcription is typically primed using oligo-dT primers or random primers.
+
+    \item Library Preparation: The cDNA molecules are then processed to generate sequencing libraries, which involve DNA amplification, fragmentation, and the addition of sequencing adapters. These libraries contain the cDNA molecules representing each cell's transcriptional profile.
+
+    \item Sequencing: The prepared libraries are subjected to high-throughput next-generation sequencing (NGS) using platforms such as Illumina or 10x Genomics. Sequencing generates millions of short reads representing each cell's cDNA molecules.
+
+    \item Data Analysis: The resulting sequence reads are then processed and analyzed bioinformatically to obtain gene expression profiles for each cell. This involves reading alignment, gene quantification, quality control, and data normalization. Advanced computational techniques, such as dimensionality reduction, clustering, and cell type identification, are also commonly used to analyze scRNA-seq data and identify distinct cell populations or states.
+\end{itemize}
+
+\paragraph{} scRNA-seq experiments offer several advantages over traditional bulk RNA-seq, where gene expression is measured from a population of cells together. scRNA-seq provides a higher resolution and allows for identifying rare cell types or subpopulations, detecting cell-to-cell heterogeneity, and characterizing dynamic changes in gene expression at the single-cell level. scRNA-seq has been widely used in various research areas, including developmental biology, cancer research, neuroscience, immunology, and stem cell research, to gain insights into cellular diversity, function, and regulatory mechanisms, and it continues to be a rapidly evolving field with ongoing advancements in experimental protocols, data analysis techniques, and applications.
+
+\subsection{scRNA-seq computational challenges \cite{stegle2015computational}}
+
+\paragraph{} Computational analysis of single-cell RNA sequencing (scRNA-seq) data presents several challenges due to the unique characteristics of the data generated from these experiments. Some of the main computational challenges associated with scRNA-seq experiments include:
+
+\begin{itemize}
+    \item Data Size and Complexity: scRNA-seq data can be massive in terms of data size, as it typically involves sequencing millions of reads from individual cells, resulting in large datasets. The complexity of scRNA-seq data also arises from the fact that gene expression measurements are obtained at the level of individual cells, resulting in sparse and high-dimensional data, where many genes are not expressed in a given cell. This requires specialized computational methods to handle the large-scale and complex nature of scRNA-seq data.
+
+    \item Noise and Technical Variability: scRNA-seq data can be noisy due to technical sources of variation, such as amplification bias, dropout events (where lowly expressed genes are missed in sequencing), and batch effects (introduced during sample processing or sequencing). These sources of variability can impact the accuracy and reproducibility of scRNA-seq data analysis, and require robust computational methods for normalization, imputation, and quality control to account for and mitigate these sources of variation.
+
+    \item Cell Heterogeneity and Subpopulations: scRNA-seq data often capture cellular heterogeneity, as individual cells within a tissue or sample can exhibit diverse transcriptional profiles due to cell type differences, cell cycle stages, or transient cellular states. Identifying and characterizing distinct cell populations or subpopulations within scRNA-seq data requires advanced computational methods for clustering, dimensionality reduction, and cell type identification, which can be challenging due to the high variability and noise in the data.
+
+    \item Statistical Inference and Hypothesis Testing: scRNA-seq data analysis often involves statistical inference and hypothesis testing to identify differentially expressed genes, enriched gene sets, or other biologically relevant patterns. However, the small sample sizes of individual cells and the high variability in gene expression measurements can pose challenges for accurate statistical inference, requiring specialized statistical methods that account for the unique characteristics of scRNA-seq data, such as zero inflation, overdispersion, and small sample sizes.
+
+    \item Computational Resources and Scalability: Analyzing large-scale scRNA-seq datasets can require substantial computational resources and scalability, as the data size and complexity can strain computational infrastructure, storage, and processing capabilities. Efficient algorithms, parallel computing, and distributed computing approaches are often needed to handle the computational demands of scRNA-seq data analysis.
+
+    \item Interpretation and Visualization: scRNA-seq data analysis often involves interpreting and visualizing complex and high-dimensional data to gain biological insights. Developing effective visualization techniques and tools to explore scRNA-seq data, identify gene expression patterns, and interpret the results can be challenging. The data may require specialized visualization approaches to effectively represent and interpret cellular heterogeneity, gene expression dynamics, and other complex patterns.
+
+\end{itemize}
+
 \newpage
 
 \section{Methods}
+
+\subsection{}
+
+\subsection{Rcpp}
 
 \newpage
 

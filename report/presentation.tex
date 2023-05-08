@@ -1,0 +1,30 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[english]{babel}
+\usepackage{booktabs,listings}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\lstset{basicstyle=\ttfamily}
+\setlength{\parskip}{.5\baselineskip}
+\usetheme[slogan=english, style=plain,mathfont=serif]{NTNU}
+
+\title{TDT1231}
+\subtitle{Efficient rank-based statistic for partially overlapping gene sets}
+\author{Roc Salvador}
+\date{\today}
+
+\begin{document}
+	\maketitle
+    \begin{frame}[fragile]{A slide in \texttt{plain} style}
+        This style is set up wit
+
+        \lstinline!\usetheme[slogan=english, style=plain, mathfont=serif]{NTNU}!
+
+        Here you can see that the \texttt{plain} (default) style has just a logo in the bottom left and a slide number in the bottom right.
+
+        The slogan can be English or Norwegian depending on the \lstinline!slogan=! option. Here it is set to \lstinline!english! (default).
+
+        The slide number can also have the total number of slides setting \lstinline!frametotal=true!, which is \lstinline!false! (the default) here.
+        
+        The font in math mode is here set by \lstinline!mathfont=serif! (default: \lstinline!sans!) and looks like this: \[\mathrm{e}^{-\frac{a}{2}x^2} = \sqrt{\frac{1}{2\pi a}} \int_{-\infty}^\infty\mathrm{d}y\, \mathrm{e}^{-\left(\frac{y^2}{2a} +iy x\right)}\]
+    \end{frame}
+\end{document}

@@ -6,3 +6,5 @@
 gsea
 gseacc
 *.tar.gz
+out
+*.pdf
