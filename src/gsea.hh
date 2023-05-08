@@ -13,16 +13,18 @@
 #include <thread>
 #include <chrono>
 #include <cassert>
+
 using namespace std;
 using namespace chrono;
 
-struct GeneSample {
+struct GeneSample
+{
     uint32_t geneId;
     float count;
 };
 
-
-class Gsea {
+class Gsea
+{
 private:
     string expressionMatrixFilename;
     string geneSetsFilename;
@@ -53,7 +55,7 @@ private:
 
     system_clock::time_point startGSEATime;
 
-    static bool geneSampleComp(const GeneSample& g1, const GeneSample& g2);
+    static bool geneSampleComp(const GeneSample &g1, const GeneSample &g2);
 
     void readRna();
 
@@ -83,13 +85,18 @@ private:
 
 public:
     Gsea();
-    
-    Gsea(unordered_map<string, unordered_set<string>>& geneSets,
-         vector<vector<GeneSample>>& expressionMatrix,
-         vector<string>& geneIds,
-         vector<string>& sampleIds);
+
+    Gsea(vector<string> &sampleIdsRcpp,
+         vector<string> &geneIdsRcp);
+
+    Gsea(unordered_map<string, unordered_set<string>> &geneSets,
+         vector<vector<GeneSample>> &expressionMatrix,
+         vector<string> &geneIds,
+         vector<string> &sampleIds);
 
     void run();
+
+    void runChunked(vector<vector<GeneSample>> &expressionMatrix);
 
     ~Gsea();
 };

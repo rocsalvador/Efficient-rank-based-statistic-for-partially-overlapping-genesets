@@ -1,6 +1,7 @@
 #include "gsea.hh"
 
-int main() {
+int main()
+{
     Gsea gsea;
     gsea.run();
 }
