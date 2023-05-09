@@ -1,4 +1,5 @@
 SRC_DIR := src
+R_DIR := R
 TARGET := gseacc
 
 cc:
@@ -7,7 +8,7 @@ cc:
 
 build:
 	rm -rf $(TARGET)
-	R -e 'library("Rcpp");filenames <- c(Sys.glob("$(SRC_DIR)/*.cc"), Sys.glob("$(SRC_DIR)/*.hh"));Rcpp.package.skeleton("$(TARGET)", cpp_files = filenames)'
+	R -e 'library("Rcpp");filenames <- c(Sys.glob("$(SRC_DIR)/*.cc"), Sys.glob("$(SRC_DIR)/*.hh"));Rcpp.package.skeleton("$(TARGET)", cpp_files = filenames, code_files = "$(R_DIR)/gseacc.R")'
 	R CMD build $(TARGET)
 
 install: build
