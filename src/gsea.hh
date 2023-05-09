@@ -12,6 +12,7 @@
 #include <cmath>
 #include <thread>
 #include <chrono>
+#include <filesystem>
 #include <cassert>
 
 using namespace std;
@@ -21,6 +22,12 @@ struct GeneSample
 {
     uint32_t geneId;
     float count;
+};
+
+struct GeneSet
+{
+    string geneSetId;
+    unordered_set<string> geneSet;
 };
 
 class Gsea
@@ -41,7 +48,9 @@ private:
     bool normalizedData;
     bool scRna;
 
-    unordered_map<string, unordered_set<string>> geneSets;
+    uint currentSample;
+
+    vector<GeneSet> geneSets;
 
     vector<vector<GeneSample>> expressionMatrix;
     vector<string> sampleIds;
@@ -89,7 +98,7 @@ public:
     Gsea(vector<string> &sampleIdsRcpp,
          vector<string> &geneIdsRcp);
 
-    Gsea(unordered_map<string, unordered_set<string>> &geneSets,
+    Gsea(vector<GeneSet> &geneSets,
          vector<vector<GeneSample>> &expressionMatrix,
          vector<string> &geneIds,
          vector<string> &sampleIds);

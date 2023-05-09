@@ -18,7 +18,7 @@ RCPP_MODULE(GseaModule) {
 // [[Rcpp::export]]
 void gsea(List geneSetsRcpp, IntegerMatrix countMatrixRcpp)
 {
-    unordered_map<string, unordered_set<string>> geneSets;
+    vector<GeneSet> geneSets;
     CharacterVector geneSetsIdsRcpp = geneSetsRcpp.names();
     vector<string> geneSetsIds = as<vector<string>>(geneSetsIdsRcpp);
     for (uint i = 0; i < geneSetsRcpp.length(); ++i)
@@ -26,7 +26,7 @@ void gsea(List geneSetsRcpp, IntegerMatrix countMatrixRcpp)
         CharacterVector geneSetRcpp = geneSetsRcpp[i];
         vector<string> geneVector = as<vector<string>>(geneSetRcpp);
         unordered_set<string> geneSet = unordered_set<string>(geneVector.begin(), geneVector.end());
-        geneSets.insert({geneSetsIds[i], geneSet});
+        geneSets[i] = {geneSetsIds[i], geneSet};
     }
 
     double nGenes = countMatrixRcpp.nrow();
