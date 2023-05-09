@@ -30,6 +30,12 @@ struct GeneSet
     unordered_set<string> geneSet;
 };
 
+struct GeneSetPtr
+{
+    uint geneSetPtr;
+    float value;
+};
+
 class Gsea
 {
 private:
@@ -65,6 +71,8 @@ private:
     system_clock::time_point startGSEATime;
 
     static bool geneSampleComp(const GeneSample &g1, const GeneSample &g2);
+
+    static bool geneSetPtrComp(const GeneSetPtr &g1, const GeneSetPtr &g2);
 
     void readRna();
 
@@ -106,6 +114,8 @@ public:
     void run();
 
     void runChunked(vector<vector<GeneSample>> &expressionMatrix);
+
+    void filterResults();
 
     ~Gsea();
 };

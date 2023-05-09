@@ -22,3 +22,5 @@ for (i in 1:nChunks) {
     startSample <- startSample + chunkSize
     endSample <- endSample + chunkSize
 }
+
+gsea$filterResults()

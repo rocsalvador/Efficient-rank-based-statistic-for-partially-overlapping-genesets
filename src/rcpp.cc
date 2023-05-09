@@ -12,6 +12,7 @@ RCPP_MODULE(GseaModule) {
     class_<GseaRcpp>("GseaRcpp")
     .constructor<CharacterVector, CharacterVector>()
     .method("runChunked", &GseaRcpp::runChunked)
+    .method("filterResults", &GseaRcpp::filterResults)
     ;
 }
 

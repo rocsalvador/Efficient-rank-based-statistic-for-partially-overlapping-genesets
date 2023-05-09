@@ -383,6 +383,12 @@ bool Gsea::geneSampleComp(const GeneSample &g1, const GeneSample &g2)
     return g1.count > g2.count;
 }
 
+bool Gsea::geneSetPtrComp(const GeneSetPtr &g1, const GeneSetPtr &g2)
+{
+    return g1.value > g2.value;
+}
+
+
 void Gsea::sortColumnsJob(uint startSample, uint endSample)
 {
     for (uint j = startSample; j < endSample; ++j)
@@ -639,6 +645,7 @@ void Gsea::runChunked(vector<vector<GeneSample>> &expressionMatrix)
             }
             resultsFile << endl;
         }
+        resultsFile.close();
     }
     else {
         ifstream resultsFile("results.txt");
@@ -654,6 +661,8 @@ void Gsea::runChunked(vector<vector<GeneSample>> &expressionMatrix)
             ++k;
         }
         filesystem::rename("tmp-results.txt", "results.txt");
+        resultsFile.close();
+        tmpResultsFile.close();
     }
 
     system_clock::time_point now = system_clock::now();
@@ -662,5 +671,54 @@ void Gsea::runChunked(vector<vector<GeneSample>> &expressionMatrix)
     uint ETA = (nSamples - currentSample) * duration_cast<milliseconds>(now - startGSEATime).count() / (currentSample * 60 * 1000);
     cout << " Sample: " << currentSample << " ETA: " << ETA << " min" << endl;
 }
+
+void Gsea::filterResults()
+{
+    vector<GeneSetPtr> geneSetsVar = vector<GeneSetPtr> (nGeneSets);
+    ifstream resultsFile("results.txt");
+    string line;
+    uint k = 0;
+    while (getline(resultsFile, line))
+    {
+        stringstream ssLine(line);
+        string valueStr;
+        float mean = 0;
+        float xsq = 0;
+        while (getline(ssLine, valueStr, ','))
+        {
+            float value = stof(valueStr);
+            mean += value;
+            xsq += pow(value, 2);
+        }
+        mean = pow(mean, 2);
+        mean /= nSamples;
+        geneSetsVar[k] = {k, (xsq - mean) / (nSamples - 1)};
+        ++k;
+    }
+
+    sort(geneSetsVar.begin(), geneSetsVar.end(), &Gsea::geneSetPtrComp);
+
+    unordered_set<string> filteredSets;
+    for (uint i = 0; i < uint(nSamples * 0.1); ++i) filteredSets.insert(geneSets[geneSetsVar[i].geneSetPtr].geneSetId);
+
+    ofstream filteredResultsFile("filtered-results.csv");
+    for (uint i = 0; i < nSamples; ++i) {
+        if (i != 0) filteredResultsFile << ",";
+        filteredResultsFile << sampleIds[i];
+    }
+    filteredResultsFile << endl;
+
+    resultsFile.clear();
+    resultsFile.seekg(0, ios::beg);
+    k = 0;
+    while (getline(resultsFile, line))
+    {
+        if (filteredSets.find(geneSets[k].geneSetId) != filteredSets.end()) {
+            filteredResultsFile << geneSets[k].geneSetId << "," << line << endl;
+        }
+       ++k;
+    }
+    resultsFile.close();
+ }
 
 Gsea::~Gsea() {}

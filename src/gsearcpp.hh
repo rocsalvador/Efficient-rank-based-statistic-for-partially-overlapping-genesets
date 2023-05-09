@@ -11,5 +11,7 @@ public:
 
     void runChunked(const IntegerMatrix &countMatrixRcpp);
 
+    void filterResults();
+
     ~GseaRcpp();
 };

@@ -24,6 +24,11 @@ void GseaRcpp::runChunked(const IntegerMatrix &countMatrixRcpp)
     gsea->runChunked(expressionMatrix);
 }
 
+void GseaRcpp::filterResults()
+{
+    gsea->filterResults();
+}
+
 GseaRcpp::~GseaRcpp()
 {
     delete gsea;
