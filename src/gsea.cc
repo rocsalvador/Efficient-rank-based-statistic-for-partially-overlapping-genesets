@@ -505,8 +505,8 @@ void Gsea::scEnrichmentScoreJob(uint lineStart, uint lineEnd)
         for (uint k = 0; k < geneSets.size(); ++k)
         {
             uint geneSetSize = geneSets[k].geneSet.size();
-            float posScore = sqrt((nGenes - geneSetSize) / geneSetSize);
-            float negScore = -sqrt((geneSetSize / (nGenes - geneSetSize)));
+            float posScore = sqrt((nGenes - geneSetSize) /float(geneSetSize));
+            float negScore = -1 * sqrt((geneSetSize / float(nGenes - geneSetSize)));
             float currentValue = 0;
             float maxValue = 0;
             for (uint j = 0; j < expressionMatrix[i].size(); ++j)
@@ -699,7 +699,7 @@ void Gsea::filterResults()
     sort(geneSetsVar.begin(), geneSetsVar.end(), &Gsea::geneSetPtrComp);
 
     unordered_set<string> filteredSets;
-    for (uint i = 0; i < uint(nSamples * 0.1); ++i) filteredSets.insert(geneSets[geneSetsVar[i].geneSetPtr].geneSetId);
+    for (uint i = 0; i < uint(nGeneSets * 0.1); ++i) filteredSets.insert(geneSets[geneSetsVar[i].geneSetPtr].geneSetId);
 
     ofstream filteredResultsFile("filtered-results.csv");
     for (uint i = 0; i < nSamples; ++i) {

@@ -11,7 +11,7 @@ gsea <- new(GseaRcpp, sampleIds, geneIds)
 rm(sampleIds)
 rm(geneIds)
 
-nChunks <- 1000
+nChunks <- 200
 chunkSize <- as.integer(raw$n_obs / nChunks)
 startSample <- 1
 endSample <- as.integer(chunkSize)
