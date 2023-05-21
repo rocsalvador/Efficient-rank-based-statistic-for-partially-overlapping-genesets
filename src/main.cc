@@ -3,5 +3,5 @@
 int main()
 {
     Gsea gsea;
-    gsea.run();
+    gsea.run("suwi", 10);
 }

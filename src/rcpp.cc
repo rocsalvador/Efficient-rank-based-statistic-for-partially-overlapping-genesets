@@ -1,6 +1,7 @@
 #include <Rcpp.h>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <unordered_set>
 #include "gsea.hh"
@@ -10,49 +11,19 @@ using namespace std;
 
 RCPP_MODULE(GseaModule) {
     class_<GseaRcpp>("GseaRcpp")
-    .constructor<CharacterVector, CharacterVector>()
+    .constructor<CharacterVector, CharacterVector, List, uint>()
+    .constructor<NumericMatrix, List, uint, bool>()
     .method("runChunked", &GseaRcpp::runChunked)
     .method("filterResults", &GseaRcpp::filterResults)
+    .method("run", &GseaRcpp::run)
+    .method("normalizeExprMatrix", &GseaRcpp::normalizeExprMatrix)
     ;
 }
 
 // [[Rcpp::export]]
-void gsea(List geneSetsRcpp, IntegerMatrix countMatrixRcpp)
+void writeGeneSets(List geneSetsRcpp, String fileName)
 {
-    vector<GeneSet> geneSets;
-    CharacterVector geneSetsIdsRcpp = geneSetsRcpp.names();
-    vector<string> geneSetsIds = as<vector<string>>(geneSetsIdsRcpp);
-    for (uint i = 0; i < geneSetsRcpp.length(); ++i)
-    {
-        CharacterVector geneSetRcpp = geneSetsRcpp[i];
-        vector<string> geneVector = as<vector<string>>(geneSetRcpp);
-        unordered_set<string> geneSet = unordered_set<string>(geneVector.begin(), geneVector.end());
-        geneSets[i] = {geneSetsIds[i], geneSet};
-    }
-
-    double nGenes = countMatrixRcpp.nrow();
-    double nSamples = countMatrixRcpp.ncol();
-    vector<vector<GeneSample>> countMatrix(nGenes, vector<GeneSample>(nSamples));
-    CharacterVector geneIdsRcpp = rownames(countMatrixRcpp);
-    vector<string> geneIds = as<vector<string>>(geneIdsRcpp);
-    CharacterVector sampleIdsRcpp = colnames(countMatrixRcpp);
-    vector<string> sampleIds = as<vector<string>>(sampleIdsRcpp);
-    for (uint i = 0; i < nGenes; ++i)
-    {
-        for (uint j = 0; j < nSamples; ++j)
-        {
-            countMatrix[i][j] = {i, float(countMatrixRcpp(i, j))};
-        }
-    }
-
-    Gsea gsea(geneSets, countMatrix, geneIds, sampleIds);
-    gsea.run();
-}
-
-// [[Rcpp::export]]
-void writeGeneSets(List geneSetsRcpp)
-{
-    ofstream file("gene-sets.csv");
+    ofstream file(fileName);
     unordered_map<string, unordered_set<string>> geneSets;
     CharacterVector geneSetsIdsRcpp = geneSetsRcpp.names();
     vector<string> geneSetsIds = as<vector<string>>(geneSetsIdsRcpp);
@@ -72,7 +43,7 @@ void writeGeneSets(List geneSetsRcpp)
 }
 
 // [[Rcpp::export]]
-List readGeneSets(std::string fileName, char sep)
+List readGeneSets(std::string fileName)
 {
     ifstream file(fileName);
     std::string line;
@@ -82,14 +53,14 @@ List readGeneSets(std::string fileName, char sep)
     CharacterVector geneSetIds;
     while (getline(file, line))
     {
-        CharacterVector geneSet;
+        list<string> geneSet;
         stringstream ssLine(line);
         string rowName;
-        getline(ssLine, rowName, sep);
+        getline(ssLine, rowName, ',');
         geneSetIds.push_back(rowName);
 
         string valueStr;
-        while (getline(ssLine, valueStr, sep))
+        while (getline(ssLine, valueStr, ','))
         {
             geneSet.push_back(valueStr);
         }
@@ -99,4 +70,53 @@ List readGeneSets(std::string fileName, char sep)
     return geneSets;
 }
 
+// [[Rcpp::export]]
+NumericMatrix readCsv(String fileName, char sep) {
+    ifstream file(fileName);
+    std::string line;
 
+    list<string> colNamesList;
+    getline(file, line);
+    stringstream ssLine(line);
+    string colName;
+    while (getline(ssLine, colName, sep))
+    {
+        colNamesList.push_back(colName);
+    }
+
+    list<string> rowNamesList;
+    list<list<float>> listMatrix;
+    while (getline(file, line))
+    {
+        stringstream ssLine(line);
+        string rowName;
+        getline(ssLine, rowName, sep);
+        rowNamesList.push_back(rowName);
+
+        string valueStr;
+        list<float> row;
+        while (getline(ssLine, valueStr, sep))
+        {
+            row.push_back(stof(valueStr));
+        }
+        listMatrix.push_back(row);
+    }
+    NumericMatrix matrix(listMatrix.size(), listMatrix.begin()->size());
+    auto rowIt = listMatrix.begin();
+    for (uint i = 0; i < matrix.nrow(); ++i, ++rowIt) {
+        auto colIt = rowIt->begin();
+        for (uint j = 0; j < matrix.ncol(); ++j, ++colIt) {
+            matrix(i, j) = *colIt;
+        }
+    }
+    CharacterVector rowNames(rowNamesList.size());
+    auto it = rowNamesList.begin();
+    for (uint i = 0; i < rowNames.length(); ++i, ++it) rowNames(i) = *it;
+    CharacterVector colNames(colNamesList.size());
+    it = colNamesList.begin();
+    for (uint i = 0; i < colNames.length(); ++i, ++it) colNames(i) = *it;
+
+    rownames(matrix) = rowNames;
+    colnames(matrix) = colNames;
+    return matrix;
+}

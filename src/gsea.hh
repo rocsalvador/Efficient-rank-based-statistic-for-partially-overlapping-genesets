@@ -47,6 +47,7 @@ private:
     char outputSep;
     uint ioutput;
     uint batchSize;
+    uint chunk;
 
     uint nThreads;
     uint logThread;
@@ -104,18 +105,24 @@ public:
     Gsea();
 
     Gsea(vector<string> &sampleIdsRcpp,
-         vector<string> &geneIdsRcp);
+         vector<string> &geneIdsRcp,
+         vector<GeneSet> &geneSets,
+         uint nThreads);
 
     Gsea(vector<GeneSet> &geneSets,
          vector<vector<GeneSample>> &expressionMatrix,
          vector<string> &geneIds,
-         vector<string> &sampleIds);
+         vector<string> &sampleIds,
+         uint threads,
+         bool scRna);
 
-    void run();
+    void run(string outFileName, uint ioutput);
 
     void runChunked(vector<vector<GeneSample>> &expressionMatrix);
 
-    void filterResults();
+    void filterResults(uint nFilteredGeneSets);
+
+    void normalizeExprMatrix();
 
     ~Gsea();
 };

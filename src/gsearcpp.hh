@@ -2,16 +2,29 @@
 #include "gsea.hh"
 using namespace Rcpp;
 
-class GseaRcpp {
+class GseaRcpp
+{
 private:
     Gsea *gsea;
+
 public:
     GseaRcpp(CharacterVector sampleIdsRcpp,
-             CharacterVector geneIdsRcp);
+             CharacterVector geneIdsRcp,
+             List geneSetsRcpp,
+             uint nThreads);
 
-    void runChunked(const IntegerMatrix &countMatrixRcpp);
+    GseaRcpp(NumericMatrix expressionMatrix,
+             List geneSets,
+             uint threads = 1,
+             bool scRna = false);
 
-    void filterResults();
+    void runChunked(const NumericMatrix &countMatrixRcpp);
+
+    void filterResults(uint nFilteredGeneSets);
+
+    void run(string outFileName, uint ioutput);
+
+    void normalizeExprMatrix();
 
     ~GseaRcpp();
 };
