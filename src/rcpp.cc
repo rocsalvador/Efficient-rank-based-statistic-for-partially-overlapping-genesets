@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <vector>
 #include <unordered_set>
 #include "gsea.hh"
@@ -71,52 +72,72 @@ List readGeneSets(std::string fileName)
 }
 
 // [[Rcpp::export]]
-NumericMatrix readCsv(String fileName, char sep) {
+NumericMatrix readCsv(String fileName, char sep = ',', bool hasRowNames = true, bool hasColNames = true) {
     ifstream file(fileName);
-    std::string line;
+    string line;
 
-    list<string> colNamesList;
-    getline(file, line);
-    stringstream ssLine(line);
-    string colName;
-    while (getline(ssLine, colName, sep))
+
+    uint nCols = 0;
+    uint nRows = 0;
+    bool first = true;
+    while (getline(file, line))
     {
-        colNamesList.push_back(colName);
+        if (first) {
+            stringstream ssLine(line);
+            string valueStr;
+            while (getline(ssLine, valueStr, sep))
+                ++nCols;
+            first = false;
+        }
+        ++nRows;
     }
 
-    list<string> rowNamesList;
-    list<list<float>> listMatrix;
+    if (hasRowNames) --nRows;
+
+    file.clear();
+    file.seekg(0, ios::beg);
+
+
+    NumericMatrix matrix(nRows, nCols);
+    CharacterVector rowNames(nRows);
+    CharacterVector colNames(nCols);
+    uint i = 0;
+    if (hasColNames) {
+        getline(file, line);
+        stringstream ssLine(line);
+        string valueStr;
+        while (getline(ssLine, valueStr, sep))
+        {
+            colNames(i) = valueStr;
+            ++i;
+        }
+    }
+
+    i = 0;
     while (getline(file, line))
     {
         stringstream ssLine(line);
-        string rowName;
-        getline(ssLine, rowName, sep);
-        rowNamesList.push_back(rowName);
+
+        if (hasRowNames) {
+            string rowName;
+            getline(ssLine, rowName, sep);
+            rowNames(i) = rowName;
+        }
 
         string valueStr;
-        list<float> row;
+        uint j = 0;
         while (getline(ssLine, valueStr, sep))
         {
-            row.push_back(stof(valueStr));
+            matrix(i, j) = stof(valueStr);
+            ++j;
         }
-        listMatrix.push_back(row);
+        ++i;
     }
-    NumericMatrix matrix(listMatrix.size(), listMatrix.begin()->size());
-    auto rowIt = listMatrix.begin();
-    for (uint i = 0; i < matrix.nrow(); ++i, ++rowIt) {
-        auto colIt = rowIt->begin();
-        for (uint j = 0; j < matrix.ncol(); ++j, ++colIt) {
-            matrix(i, j) = *colIt;
-        }
-    }
-    CharacterVector rowNames(rowNamesList.size());
-    auto it = rowNamesList.begin();
-    for (uint i = 0; i < rowNames.length(); ++i, ++it) rowNames(i) = *it;
-    CharacterVector colNames(colNamesList.size());
-    it = colNamesList.begin();
-    for (uint i = 0; i < colNames.length(); ++i, ++it) colNames(i) = *it;
 
-    rownames(matrix) = rowNames;
-    colnames(matrix) = colNames;
+    if (hasRowNames)
+        rownames(matrix) = rowNames;
+    if (hasColNames)
+        colnames(matrix) = colNames;
+
     return matrix;
 }
