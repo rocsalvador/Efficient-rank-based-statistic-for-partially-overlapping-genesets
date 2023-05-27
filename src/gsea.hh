@@ -89,15 +89,13 @@ private:
 
     void meanCenter();
 
-    void sortGenes();
-
     void sortColumnsJob(uint columnStart, uint columnEnd);
 
     void enrichmentScore();
 
     void enrichmentScoreJob(uint sampleStart, uint sampleEnd);
 
-    void scEnrichmentScoreJob(uint lineStart, uint lineEnd);
+    void scEnrichmentScoreJob(uint sampleStart, uint sampleEnd);
 
     void writeResults();
 

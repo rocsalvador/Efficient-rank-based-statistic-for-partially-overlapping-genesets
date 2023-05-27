@@ -1,5 +1,6 @@
 #include "gsea.hh"
 #include <filesystem>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -357,7 +358,7 @@ Gsea::Gsea(vector<GeneSet> &geneSets,
     if (nThreads == 0)
         this->nThreads = thread::hardware_concurrency();
     else
-        this->nThreads = nThreads;
+        this->nThreads = threads;
     this->scRna = scRna;
     results = vector<vector<float>>(geneSets.size(), vector<float>(nSamples));
 }
@@ -414,31 +415,6 @@ void Gsea::sortColumnsJob(uint startSample, uint endSample)
     }
 }
 
-void Gsea::sortGenes()
-{
-    uint samplesPerThread = nSamples / nThreads;
-    uint offset = nSamples % samplesPerThread;
-    vector<thread> threads = vector<thread>(nThreads);
-    for (uint i = 0; i < nThreads; ++i)
-    {
-        uint startSample = i * samplesPerThread;
-        uint endSample = startSample + samplesPerThread;
-        if (i == nThreads - 1)
-            endSample += offset;
-
-        threads[i] = thread(&Gsea::sortColumnsJob, this, startSample, endSample);
-
-        if (i == nThreads - 1)
-        {
-            auto threadId = threads[i].get_id();
-            logThread = *static_cast<unsigned int *>(static_cast<void *>(&threadId));
-        }
-    }
-
-    for (thread &t : threads)
-        t.join();
-}
-
 void Gsea::enrichmentScore()
 {
     uint samplesPerThread = nSamples / nThreads;
@@ -462,8 +438,17 @@ void Gsea::enrichmentScore()
         t.join();
 }
 
+/**
+ * @brief Runs the gsea from lineStart to lineEnd samples, assuming genes in the rows and samples in the columns
+ * @param startSample start sample
+ * @param endSample end sample
+ * @pre expressionMatrix rows contain genes, expressionMatrix columns contain samples
+ * @post The samples startSample to endSample in the results matrix contain the ES
+ */
 void Gsea::enrichmentScoreJob(uint startSample, uint endSample)
 {
+    sortColumnsJob(startSample, endSample);
+
     assert(endSample < nSamples);
     auto threadId = this_thread::get_id();
     uint id = *static_cast<unsigned int *>(static_cast<void *>(&threadId));
@@ -503,16 +488,23 @@ void Gsea::enrichmentScoreJob(uint startSample, uint endSample)
     }
 }
 
-void Gsea::scEnrichmentScoreJob(uint lineStart, uint lineEnd)
+/**
+ * @brief Runs the gsea from startSample to endSample samples, assuming samples in the rows and genes in the columns
+ * @param startSample start sample
+ * @param endSample end sample
+ * @pre expressionMatrix rows contain samples, expressionMatrix columns contain genes
+ * @post The samples startSample to endSample in the results matrix contain the ES
+ */
+void Gsea::scEnrichmentScoreJob(uint startSample, uint endSample)
 {
     auto threadId = this_thread::get_id();
     uint id = *static_cast<unsigned int *>(static_cast<void *>(&threadId));
-    for (uint i = lineStart; i < lineEnd; ++i)
+    for (uint i = startSample; i < endSample; ++i)
     {
         sort(expressionMatrix[i].begin(), expressionMatrix[i].end(), &Gsea::geneSampleComp);
     }
 
-    for (uint i = lineStart; i < lineEnd; ++i)
+    for (uint i = startSample; i < endSample; ++i)
     {
         for (uint k = 0; k < nGeneSets; ++k)
         {
@@ -580,8 +572,6 @@ void Gsea::writeResults()
 
 void Gsea::runRna()
 {
-    sortGenes();
-
     enrichmentScore();
 
     writeResults();
@@ -612,6 +602,11 @@ void Gsea::run(string outFileName, uint ioutput)
     cout << "Results written in " << outputFilename << endl;
 }
 
+/**
+ * @brief Runs gsea for the given expression matrix using the gene sets initialised in the Gsea creator function
+ * @param expressionMatrix matrix containing counts in the cells, samples in the rows and genes in the columns
+ * @post The correspinding chunk file contains the ES score for each sample and gene set
+ */
 void Gsea::runChunked(vector<vector<GeneSample>> &expressionMatrix)
 {
     if (currentSample == 0)
@@ -667,6 +662,12 @@ void Gsea::runChunked(vector<vector<GeneSample>> &expressionMatrix)
     cout << " Sample: " << currentSample << " ETA: " << ETA << " min" << endl;
 }
 
+/**
+ * @brief Filter the chunked gsea results by selecting the nFilteredGeneSets gene sets with more variance across the samples
+ * @param nFilteredGeneSets number of gene sets selected to be written in the filtered results file
+ * @pre runChunked has been run at least one time
+ * @post Filtered-results.csv contains the filtered results
+ */
 void Gsea::filterResults(uint nFilteredGeneSets)
 {
     assert(nFilteredGeneSets < nGeneSets);
@@ -687,7 +688,8 @@ void Gsea::filterResults(uint nFilteredGeneSets)
 
     for (uint i = 0; i < nGeneSets; ++i) {
         float mean = 0;
-        float xsq = 0;
+        uint k = 0;
+        vector<float> rowValues(nSamples);
         for (uint j = 0; j < nChunks; ++j) {
             getline(chunkFiles[j], line);
             stringstream ssLine(line);
@@ -695,16 +697,24 @@ void Gsea::filterResults(uint nFilteredGeneSets)
             while (getline(ssLine, valueStr, ','))
             {
                 float value = stof(valueStr);
-                mean += value;
-                xsq += pow(value, 2);
+                rowValues[k] = value;
+                mean += rowValues[k];
+                ++k;
             }
         }
-        mean = pow(mean, 2);
         mean /= nSamples;
-        geneSetsVar[i] = {i, (xsq - mean) / (nSamples - 1)};
+        float variance = 0;
+        for (uint j = 0; j < nSamples; ++j) {
+            variance += pow((rowValues[j] - mean), 2);
+        }
+        variance /= nSamples;
+
+        geneSetsVar[i] = {i, variance};
     }
 
     sort(geneSetsVar.begin(), geneSetsVar.end(), &Gsea::geneSetPtrComp);
+    ofstream variance("var");
+    for (auto x : geneSetsVar) variance << geneSets[x.geneSetPtr].geneSetId << " " << x.value << endl;
 
     unordered_set<string> filteredSets;
     for (uint i = 0; i < nFilteredGeneSets; ++i)
@@ -719,20 +729,20 @@ void Gsea::filterResults(uint nFilteredGeneSets)
     }
     filteredResultsFile << endl;
 
-
     for (uint i = 0; i < nChunks; ++i) {
         chunkFiles[i].clear();
         chunkFiles[i].seekg(0, ios::beg);
     }
     for (uint i = 0; i < nGeneSets; ++i) {
-        if (filteredSets.find(geneSets[i].geneSetId) != filteredSets.end()) {
+        bool filtered = filteredSets.find(geneSets[i].geneSetId) != filteredSets.end();
+        if (filtered)
             filteredResultsFile << geneSets[i].geneSetId;
-            for (uint j = 0; j < nChunks; ++j) {
-                getline(chunkFiles[j], line);
-                filteredResultsFile << "," << line;
-            }
-            filteredResultsFile << endl;
+        for (uint j = 0; j < nChunks; ++j) {
+            getline(chunkFiles[j], line);
+            if (filtered) filteredResultsFile << "," << line;
         }
+        if (filtered)
+            filteredResultsFile << endl;
     }
 }
 
