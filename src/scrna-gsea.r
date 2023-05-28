@@ -1,20 +1,20 @@
 library(gseacc)
-# library(Seurat)
 library(anndata)
-# library(patchwork)
 
-raw <- read_h5ad("data/healthy-raw.h5ad")
+raw <- read_h5ad("data/healthy_raw.h5ad")
 
+geneSets <- readGeneSets("data/GO_gene_sets_symbol.csv")
 geneIds <- raw$var_names
 sampleIds <- raw$obs_names
-gsea <- new(GseaRcpp, sampleIds, geneIds)
+gsea <- new(GseaRcpp, sampleIds, geneIds, geneSets, 0)
 rm(sampleIds)
 rm(geneIds)
 
-nChunks <- 200
+nChunks <- 100
 chunkSize <- as.integer(raw$n_obs / nChunks)
-startSample <- 1
-endSample <- as.integer(chunkSize)
+offset <- raw$n_obs %% nChunks
+startSample <- 0
+endSample <- as.integer(chunkSize - 1)
 
 for (i in 1:nChunks) {
     countMatrix <- raw$chunk_X(select = startSample:endSample)
@@ -23,4 +23,10 @@ for (i in 1:nChunks) {
     endSample <- endSample + chunkSize
 }
 
-gsea$filterResults()
+endSample <- startSample + offset - 1
+if (startSample < endSample) {
+    countMatrix <- raw$chunk_X(select = startSample:endSample)
+    gsea$runChunked(countMatrix)
+}
+
+gsea$filterResults(1000)
