@@ -27,6 +27,7 @@ linkcolor= blue,
 % bookmarksopen=false,
 }
 \usepackage{xurl}
+\usepackage{float}
 
 % Code to add paragraph numbers and titles
 \newif\ifptitle
@@ -154,28 +155,28 @@ The source code and its corresponding documentation can be found in \cite{gseacc
 
 \ptitle{gseacc}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \caption{Pseudocode of gsea function for Rna-seq in gseacc}
 \begin{algorithmic}[1]
 \State{$N$ $\gets$ number of sampled genes}
 \State{$GS$ $\gets$ number of gene sets}
 \For{$k \gets 1$ to $GS$}
-\State{$G$ $\gets$ $geneSet_k$ size}
-\State{$positive$ $\gets$ $\sqrt{\dfrac{N - G} {G}}$}
-\State{$negative$ $\gets$ -$\sqrt{\dfrac{G} {N - G}}$}
-\For{$j \gets 1$ to $S$}
-\For{$i \gets 1$ to $N$}
-\State{$current$ $\gets$ {$0$}}
-\State{$max$ $\gets$ {$0$}}
-\If{$genes_i$ in $geneSets_k$}
-     \State{$current$ $\gets$ $current$ + $positive$}
-\Else
-     \State{$current$ $\gets$ $current$ + $negScore$}
-\EndIf
-\State{$max$ $\gets$ $max(max, current)$}
-\EndFor
-\State{$results_{ij}$ $\gets$ max}
-\EndFor
+    \State{$G$ $\gets$ $geneSet_k$ size}
+    \State{$positive$ $\gets$ $\sqrt{\dfrac{N - G} {G}}$}
+    \State{$negative$ $\gets$ -$\sqrt{\dfrac{G} {N - G}}$}
+    \For{$j \gets 1$ to $S$}
+        \For{$i \gets 1$ to $N$}
+            \State{$current$ $\gets$ {$0$}}
+            \State{$max$ $\gets$ {$0$}}
+            \If{$genes_i$ in $geneSets_k$}
+                \State{$current$ $\gets$ $current$ + $positive$}
+            \Else
+                \State{$current$ $\gets$ $current$ + $negScore$}
+            \EndIf
+            \State{$max$ $\gets$ $max(max, current)$}
+        \EndFor
+        \State{$results_{ij}$ $\gets$ max}
+    \EndFor
 \EndFor
 \end{algorithmic}
 \end{figure}
@@ -183,22 +184,22 @@ The source code and its corresponding documentation can be found in \cite{gseacc
 
 \ptitle{Limma}
 
+\subsection{scRna-seq}
 
 
-\subsection{}
-
-\begin{figure}[h]
+\begin{figure}[H]
     \includegraphics[clip=true,width=4cm]{img/pipeline.png}
     \caption{scRna-seq analysis pipeline}
      \label{fig:pixels}
 \end{figure}
 
-\ptitle{gseacc}
+\ptitle{gseacc} The main challenge to run the Enrichment Score with scRna-seq datasets is its large size. This is why gseacc implements a function that allows to run the GSEA algorithm in chunks. This chunks are obtained by splitting the expression matrix by samples, in the case of \texttt{Anndata} objects using the \texttt{chunk\_X} function. Since the algorithm is run in different function calls and storing the previous results in the RAM is not possible, different output files are generated. The n most variable gene sets across the samples can be obtained by running the \texttt{filterResults} function from the \texttt{gseacc} package. (\ref{fig:chunkedgsea})
 
-\begin{figure}[h]
+
+\begin{figure}[H]
     \includegraphics[clip=true,width=7cm]{img/gsea-pipeline.png}
     \caption{Chunked ssGsea for scRna-seq}
-     \label{fig:pixels}
+    \label{fig:chunkedgsea}
 \end{figure}
 
 
@@ -222,7 +223,7 @@ The source code and its corresponding documentation can be found in \cite{gseacc
 
 \subsection{RNA-seq}
 
-\ptitle{The dataset} For the RNA-seq experiment, the expression matrix from the GSE121212 experiment \cite{gse121212} was used. This dataset contains gene counts for different samples of human skin and the following phenotypes:
+\ptitle{The dataset \label{pt:rnaseqdata}} For the RNA-seq experiment, the expression matrix from the GSE121212 experiment \cite{gse121212} was used. This dataset contains gene counts for different samples of human skin and the following phenotypes:
 
 \begin{itemize}
     \item Healthy control skin
@@ -281,7 +282,13 @@ The most differentially expressed gene set is GO:2000330. This Gene Ontology ter
 
 \subsection{scRNA-seq}
 
-\ptitle{The dataset} The dataset used to test the scRna-seq GSEA implementation consists of $1.9\cdot10^5$ samples (cells) and $2\cdot10^4$ genes from adult human skin. It was extacted from \textit{Developmental cell programs are co-opted in inflammatory skin disease} \cite{healthy}
+\ptitle{The dataset} The dataset used to test the scRna-seq GSEA implementation consists of $1.9\cdot10^5$ samples (cells) and $2\cdot10^4$ genes from adult human skin. It was extacted from \textit{Developmental cell programs are co-opted in inflammatory skin disease}\cite{healthy}.
+
+It has aproximatelly $10\cdot10^9$ counts, that is  $10^3$ orders of magnitude larger than the Rna-seq dataset \ref{pt:rnaseqdata}.
+
+\ptitle{Steps}
+
+The running time for the GSEA was of 9h and 46min using 8 threads, with an average of 4.9 GB of RAM usage, with the expression matrix splitted in 100 chunks.
 
 \section{Conclusions}
 
