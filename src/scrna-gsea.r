@@ -29,4 +29,4 @@ if (startSample < endSample) {
     gsea$runChunked(countMatrix)
 }
 
-gsea$filterResults(1000)
+gsea$filterResults(1000, "", "filtered-results.csv")
