@@ -141,7 +141,24 @@ Where $N$ is the number of sampled genes, $G$ is the size of the current gene se
 \end{enumerate}
 \vspace{2mm}
 
-\ptitle{Linear models}
+\ptitle{Linear models} \cite{limma} Linear models are used to analyze gene expression data and identify differentially expressed genes between different experimental conditions or groups. The linear model framework provides a flexible and powerful approach to account for various sources of variation and perform statistical inference.
+
+A linear model is defined as:
+
+\begin{equation}
+y = X\beta + \epsilon
+\end{equation}
+
+where:
+
+\begin{itemize}
+\item $y$ represents the observed gene expression data for a particular gene across different samples.
+\item $X$ is the design matrix that incorporates information about the experimental conditions or groups. Each column of $X$ represents a factor or covariate associated with the experiment (e.g., treatment, time points).
+\item $\beta$  is the vector of coefficients that represents the differential expression effects associated with each factor or condition. Each coefficient $\beta$ corresponds to the effect of a particular factor on gene expression.
+\item $\epsilon$ represents the residual error term, accounting for the random variation that cannot be explained by the factors in the model.
+\end{itemize}
+
+The goal of the linear model is to estimate the coefficients $\beta$ and test for the significance of the differential expression effects. This is done through the application of statistical methods, such as hypothesis testing or estimation of effect sizes.
 
 \ptitle{Cell clustering} Clustering is a data analysis method that aims to group similar objects while maximizing the dissimilarity between different groups. In single-cell sequencing experiments, clustering is employed to identify distinct cell populations based on their transcriptional profiles. By partitioning the dataset into subsets of cells that exhibit similar gene expression patterns, clustering allows for uncovering hidden structures and relationships within the cellular landscape.
 
@@ -182,30 +199,41 @@ The source code and its corresponding documentation can be found in \cite{gseacc
 \end{figure}
 
 
-\ptitle{Limma}
+\ptitle{Limma} The
 
 \subsection{scRna-seq}
 
-
 \begin{figure}[H]
-    \includegraphics[clip=true,width=4cm]{img/pipeline.png}
-    \caption{scRna-seq analysis pipeline}
-     \label{fig:pixels}
+\centering
+\includegraphics[clip=true,width=4cm]{img/pipeline.png}
+\caption{scRna-seq analysis pipeline}
+\label{fig:pixels}
 \end{figure}
 
-\ptitle{gseacc} The main challenge to run the Enrichment Score with scRna-seq datasets is its large size. This is why gseacc implements a function that allows to run the GSEA algorithm in chunks. This chunks are obtained by splitting the expression matrix by samples, in the case of \texttt{Anndata} objects using the \texttt{chunk\_X} function. Since the algorithm is run in different function calls and storing the previous results in the RAM is not possible, different output files are generated. The n most variable gene sets across the samples can be obtained by running the \texttt{filterResults} function from the \texttt{gseacc} package. (\ref{fig:chunkedgsea})
+\ptitle{gseacc} The main challenge to running the Enrichment Score with scRna-seq datasets is its large size. This is why gseacc implements a function that allows running the GSEA algorithm in chunks. These chunks are obtained by splitting the expression matrix by samples, in the case of \texttt{Anndata} objects using the \texttt{chunk\_X} function. Since the algorithm is run in different function calls and storing the previous results in the RAM is impossible, different output files are generated. The n most variable gene sets across the samples can be obtained by running the \texttt{filterResults} function from the \texttt{gseacc} package. (\ref{fig:chunkedgsea})
 
 
-\begin{figure}[H]
-    \includegraphics[clip=true,width=7cm]{img/gsea-pipeline.png}
-    \caption{Chunked ssGsea for scRna-seq}
-    \label{fig:chunkedgsea}
+\begin{figure}[h]
+\centering
+\includegraphics[clip=true,width=7cm]{img/gsea-pipeline.png}
+\caption{Chunked ssGsea for scRna-seq}
+\label{fig:chunkedgsea}
 \end{figure}
 
 
-\ptitle{Seurat \cite{seurat-v4} \cite{seurat-web}} Explain Seurat steps
+\ptitle{Seurat \cite{seurat-v4} \cite{seurat-web}} The main steps in cell clustering using the Seurat package usually are the following:
+\begin{itemize}
+\item Scale and center data: Scale and center the gene expression matrix to make the gene expression values comparable across cells
+\item Principal component analysis (PCA): Use PCA to reduce the dimensionality of the dataset. PCA identifies the principal components that capture the largest sources of variation in the data. These components serve as new features representing the original expression matrix.
+\item Find the cell clusters: Construct a nearest-neighbor graph based on the selected principal components, where each cell is connected to its nearest neighbors. Clustering algorithms, such as Louvain or Leiden, are then applied to partition the graph into distinct clusters. These clusters represent putative cell types or states.
+\item Reduce dimensionality: Reduce the dimensionality of the clusters using techniques like UMAP (Uniform Manifold Approximation and Projection).
+\end{itemize}
+
+
 
 \section{\label{sec:Results}Results and analysis}
+
+All R scripts used for each section can be found on GitHub \cite{thesis-github}.
 
 \begin{table}[H]
 \centering
@@ -223,7 +251,7 @@ The source code and its corresponding documentation can be found in \cite{gseacc
 
 \subsection{RNA-seq}
 
-\ptitle{The dataset \label{pt:rnaseqdata}} For the RNA-seq experiment, the expression matrix from the GSE121212 experiment \cite{gse121212} was used. This dataset contains gene counts for different samples of human skin and the following phenotypes:
+\ptitle{The dataset \label{pt:rnaseqdata}} For the RNA-seq experiment, the expression matrix from the GSE121212 experiment \cite{gse121212} was used. It contains 147 samples of 60675 genes. This dataset contains gene counts for different samples of human skin and the following phenotypes:
 
 \begin{itemize}
     \item Healthy control skin
@@ -238,6 +266,7 @@ The source code and its corresponding documentation can be found in \cite{gseacc
 \begin{table}[H]
 \centering
 \label{tab:pssolvspsol}
+\caption{Scalability for the Enrichment Score computation for the GSE121212 experiment and all the 22962 gene sets from the Gene Ontology. The speedup is the improvement in speed of execution respect to the execution with one thread. The overheads in the 8-threads run may be caused due to the fact the processor only has 4 CPUs with 2 threads each.}
 \begin{tabular}{ | c @{\hspace{0.6cm}} c @{\hspace{0.5cm}} c | }
     \hline
     Threads & Elapsed time (min) & Speedup \\
@@ -249,7 +278,6 @@ The source code and its corresponding documentation can be found in \cite{gseacc
     8 & 85 & 4.67\\
     \hline
 \end{tabular}
-\caption{Scalability for the Enrichment Score computation for the 60675 genes, 147 samples from the GSE121212 experiment and 22962 gene sets from the Gene Ontology.}
 \end{table}
 
 \ptitle{Psoriasis non-lesional vs psoriasis lesional} The results for the most differentially expressed gene sets between the samples with Psoriasis
@@ -260,37 +288,108 @@ The most differentially expressed gene set is GO:2000330. This Gene Ontology ter
 \begin{table}[H]
 \centering
 \label{tab:pssolvspsol}
-\begin{tabular}{ | c @{\hspace{0.6cm}} c @{\hspace{0.5cm}} c | }
+\caption{Most different expressed gene sets in Psoriasis non-lesional and Psoriasis-lesional}
+\begin{tabular}{ | c @{\hspace{0.6cm}} c @{\hspace{0.5cm}} c @{\hspace{0.5cm}} c | }
     \hline
-    GO term & AveExpr & B \\
+    GO term & logFC & AveExpr & P value  \\
     \hline
     \hline
-    GO:2000330 & 145.89252 & -3.375500 \\
-    GO:0048817 & 94.67299 & -3.396802 \\
-    GO:0008973 & 89.61911 & -3.398116 \\
-    GO:0032500 & 99.53479 & -3.405704 \\
-    GO:0002815 & 99.53479 & -3.405704 \\
-    GO:0002805 & 99.53479 & -3.405704 \\
-    GO:0032498 & 99.53479 & -3.405704 \\
-    GO:0006963 & 99.53479 & -3.405704 \\
-    GO:0002807 & 99.53479 & -3.405704 \\
-    GO:0002816 & 99.53479 & -3.405704 \\
+    GO:2000330 & -282.9675 & 145.89252 & 1.710876e-33 \\
+    GO:0048817 & -267.3064 & 94.67299 &  1.447090e-32 \\
+    GO:0008973 & -224.9845 & 89.61911 & 1.647568e-32 \\
+    GO:0032500 & -220.1325 & 99.53479 & 3.469039e-32 \\
+    GO:0002815 & -220.1325 & 99.53479 & 3.469039e-32 \\
+    \hline
+    \hline
+     & & & \\
+     & & & \\
+     & & & \\
+     & & & \\
+     & & & \\
+     & & & \\
     \hline
 \end{tabular}
-\caption{Most different expressed gene sets in Psoriasis non-lesional and Psoriasis-lesional}
 \end{table}
 
+\ptitle{Control vs Psoriasis non-lesional}
+
+In the case of CTRL vs Psoriasis non-lesional, the most overrepresented gene is GO:0035373
+
+\begin{table}[H]
+\centering
+\label{tab:pssolvspsol}
+\caption{Most different expressed gene sets in Control and Psoriasis-lesional}
+\begin{tabular}{ | c @{\hspace{0.6cm}} c @{\hspace{0.5cm}} c @{\hspace{0.5cm}} c | }
+    \hline
+    GO term & logFC & AveExpr & P value \\
+    \hline
+    \hline
+    GO:0035373 & 153.1872 & 157.9633 & 3.507739e-08 \\
+    GO:1904103 & 100.3478 & 129.0386 & 1.492540e-07 \\
+    GO:1904105 & 100.3478 & 129.0386 & 1.492540e-07 \\
+    GO:0044595 & -108.4241 & 113.7337 & 5.931994e-07 \\
+    GO:0010420 & -108.4241 & 113.7337 &  5.931994e-07 \\
+    \hline
+    \hline
+     & & & \\
+     & & & \\
+     & & & \\
+     & & & \\
+     & & & \\
+    \hline
+\end{tabular}
+\end{table}
+
+\subsection{Gene set analysis vs gene analysis}
+
+\begin{figure}[H]
+\centering
+\includegraphics[clip=true,width=7cm]{img/GSE121212-expr-clusters.png}
+\caption{Sample clusters from the GSE121212 expression matrix}
+\label{fig:chunkedgsea}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[clip=true,width=7cm]{img/GSE121212-expr-heatmap.png}
+\caption{Sample clusters from the GSE121212 expression matrix}
+\label{fig:chunkedgsea}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[clip=true,width=7cm]{img/GSE121212-ES-clusters.png}
+\caption{Sample clusters from the GSE121212 Enrichment Score matrix}
+\label{fig:chunkedgsea}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[clip=true,width=7cm]{img/GSE121212-ES-heatmap.png}
+\caption{Sample clusters from the GSE121212 Enrichment Score matrix}
+\label{fig:chunkedgsea}
+\end{figure}
 \subsection{scRNA-seq}
 
-\ptitle{The dataset} The dataset used to test the scRna-seq GSEA implementation consists of $1.9\cdot10^5$ samples (cells) and $2\cdot10^4$ genes from adult human skin. It was extacted from \textit{Developmental cell programs are co-opted in inflammatory skin disease}\cite{healthy}.
+\ptitle{The dataset} The dataset used to test the scRna-seq GSEA implementation consists of $1.9\cdot10^5$ samples (cells) and $2\cdot10^4$ genes from adult human skin. It was extracted from \textit{Developmental cell programs are co-opted in inflammatory skin disease}\cite{healthy}.
 
-It has aproximatelly $10\cdot10^9$ counts, that is  $10^3$ orders of magnitude larger than the Rna-seq dataset \ref{pt:rnaseqdata}.
+It has approximately $10\cdot10^9$ counts, that is, $10^3$ orders of magnitude larger than the Rna-seq dataset \ref{pt:rnaseqdata}.
 
-\ptitle{Steps}
+\ptitle{Steps} The first step, as in the Rna-seq experiment, was to run the GSEA. The running time was 9h and 46min using 8 threads, with an average of 4.9 GB of RAM usage, with the expression matrix split into 100 chunks. Then the Enrichment Score results were filtered by choosing the most variable gene sets. This first section was run using \texttt{gseacc}.
 
-The running time for the GSEA was of 9h and 46min using 8 threads, with an average of 4.9 GB of RAM usage, with the expression matrix splitted in 100 chunks.
+
+\begin{figure}[H]
+\centering
+\includegraphics[clip=true,width=6cm]{img/gene-sets-variance.png}
+\caption{Enrichment Score variance of the gene sets of the Gene Ontology. There are ~1000 gene sets with a high variance, ~9000 with low variance and ~10000 with no variance at all.}
+\label{fig:pixels}
+\end{figure}
+
+\ptitle{Cell clustering}
 
 \section{Conclusions}
+
+\subsection{Limitations}
 
 \bibliography{report}
 
