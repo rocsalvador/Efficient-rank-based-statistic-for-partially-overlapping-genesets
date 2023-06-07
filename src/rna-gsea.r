@@ -5,7 +5,7 @@ library("gseacc")
 library("limma")
 library("Biobase")
 
-countMatrix <- readCsv("./data/GSE121212_psoriasis.csv", sep = "\t")
+countMatrix <- readCsv("./data/rna/GSE121212_psoriasis.csv", sep = "\t")
 # ensemblIds <- rownames(countMatrix
 
 # xx <- as.list(org.Hs.egGO2ALLEGS)
@@ -14,17 +14,17 @@ countMatrix <- readCsv("./data/GSE121212_psoriasis.csv", sep = "\t")
 #     mapIds(org.Hs.eg.db, keys = x, keytype = "ENTREZID", column = "ENSEMBL")
 # })
 
-geneSets <- readGeneSets("data/GO_gene_sets_entrez.csv")
+geneSets <- readGeneSets("data/rna/GO_gene_sets_entrez.csv")
 
-gsea <- new(GseaRcpp, countMatrix, geneSets, 8)
+gsea <- new(Gsea, countMatrix, geneSets, 8)
 
 gsea$normalizeExprMatrix()
 
 gsea$run("data/results.csv", 8)
 
 # Read GSEA results
-x <- readCsv("data/GSE121212_GO_ES.csv", sep = ",")
-p <- readCsv("data/GSE121212_samples.csv", sep = ",")
+x <- readCsv("data/rna/GSE121212_GO_ES.csv", sep = ",")
+p <- as.data.frame(readCsv("data/rna/GSE121212_samples.csv", sep = ","))
 eset <- ExpressionSet(assayData = x, phenoData = AnnotatedDataFrame(p))
 design <- model.matrix(~0 + CTRL + PSOnonlesional + PSOlesional + ADnonlesional + ADlesional, data = pData(eset))
 # Fit the model

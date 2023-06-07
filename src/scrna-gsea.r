@@ -1,12 +1,12 @@
 library(gseacc)
 library(anndata)
 
-raw <- read_h5ad("data/healthy_raw.h5ad")
+raw <- read_h5ad("data/scrna/healthy_raw.h5ad")
 
-geneSets <- readGeneSets("data/GO_gene_sets_symbol.csv")
+geneSets <- readGeneSets("data/scrna/GO_gene_sets_symbol.csv")
 geneIds <- raw$var_names
 sampleIds <- raw$obs_names
-gsea <- new(GseaRcpp, sampleIds, geneIds, geneSets, 0)
+gsea <- new(Gsea, sampleIds, geneIds, geneSets, 0)
 rm(sampleIds)
 rm(geneIds)
 
