@@ -1,7 +1,7 @@
 #!/bin/bash
 
-IN_FILENAME="data/GSE121212_sample_names.txt"
-OUT_FILENAME="data/GSE121212_samples.csv"
+IN_FILENAME="data/rna/GSE121212_sample_names.txt"
+OUT_FILENAME="data/rna/GSE121212_samples.csv"
 group_names=("CTRL" "PSOnonlesional" "PSOlesional" "ADnonlesional" "ADlesional")
 groups=("CTRL_.*" "PSO_.*_non-lesional" "PSO_.*_lesional" "AD_.*_non-lesional" "AD_.*_lesion.*")
 

@@ -6,7 +6,8 @@ library("limma")
 library("Biobase")
 
 countMatrix <- readCsv("./data/rna/GSE121212_psoriasis.csv", sep = "\t")
-# ensemblIds <- rownames(countMatrix
+
+# ensemblIds <- rownames(countMatrix)
 
 # xx <- as.list(org.Hs.egGO2ALLEGS)
 
