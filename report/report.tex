@@ -41,6 +41,10 @@ linkcolor= blue,
 \ptitletrue  % comment this line to hide paragraph titles
 \pnumbertrue  % comment this line to hide paragraph numbers
 
+% \makeatletter
+% \let\c@figure\c@table
+% \makeatother
+
 % minimum font size for figurese
 \newcommand{\minfont}{6}
 
@@ -109,19 +113,19 @@ SsGSEA aims to determine the relative activity levels of predefined gene sets wi
 \vspace{2mm}
 
 \label{sec:ks-statistic}
-For this thesis, the statistic used is a normalized Kolmogorov-Smirnov statistic \cite{diabetes}, and it's defined as follows:
+These are the steps followed for the single-sample GSEA, and its corresponding input and output matrices Figure \ref{fig:inout}:
 
 \begin{enumerate}
 
 \begin{figure}[h]
     \includegraphics[clip=true,width=7cm]{img/io-gsea.png}
     \caption{GSEA input and output matrices}
-    \label{fig:pixels}
+    \label{fig:inout}
 \end{figure}
 
 \item Normalize the expression matrix.
 \item Sort the gene counts for each sample in descending order.
-\item Compute the enrichment score (\ref{eqn:ES}) for every sample and gene set, being the score for each sampled gene ($S_i$)
+\item Compute the enrichment score. For every sample and gene set, being the score for each sampled gene ($S_i$). For this thesis, the statistic used is a normalized Kolmogorov-Smirnov statistic \cite{diabetes}:
 \begin{equation}
 S_i = \sqrt{\dfrac{N - G} {G}}
 \label{eqn:EPS}
@@ -231,7 +235,7 @@ The source code and its corresponding documentation are in \cite{gseacc-github}.
 y = (CTRL + PSNL + PSL + ADNL + ADL) \cdot \beta + 0
 \end{equation}
 
-where CTRL, PSNL, PSL, ADNL and ADL are the different dataset phenotypes.
+where Healthy control skin (CTRL), non-lesional psoriasis skin (PSNL), lesional psoriasis skin (PSL), non-lesional atopic dermatitis skin (ADNL) and lesional atopic dermatitis skin (ADL) are the different dataset phenotypes.
 
 \subsection{scRNA-seq}
 
@@ -242,9 +246,9 @@ where CTRL, PSNL, PSL, ADNL and ADL are the different dataset phenotypes.
 \label{fig:pixels}
 \end{figure}
 
-\ptitle{gseacc} The main challenge to running the Enrichment Score with scRNA-seq datasets is its large size. This is why gseacc implements a function that allows running the GSEA algorithm in chunks. These chunks are obtained by splitting the expression matrix by samples, in the case of \texttt{Anndata} objects, using the \texttt{chunk\_X} function. Since the algorithm is run in different function calls and storing the previous results in the RAM is impossible, different output files are generated. The n most variable gene sets across the samples are obtained by running the \texttt{filterResults} function from the \texttt{gseacc} package that takes all the ES data from the different chunks and computes the sample variability for each gene set. (\ref{fig:chunkedgsea})
+\ptitle{gseacc} The main challenge to running the Enrichment Score with scRNA-seq datasets is its large size. This is why gseacc implements a function that allows running the GSEA algorithm in chunks. These chunks are obtained by splitting the expression matrix by samples, in the case of \texttt{Anndata} objects, using the \texttt{chunk\_X} function. Since the algorithm is run in different function calls and storing the previous results in the RAM is impossible, different output files are generated. The n most variable gene sets across the samples are obtained by running the \texttt{filterResults} function from the \texttt{gseacc} package that takes all the ES data from the different chunks and computes the sample variability for each gene set. (Figure \ref{fig:chunkedgsea})
 
-The main difference with the RNA-seq experiment in the ssGSEA function (\ref{fig:gsea-algorithm}) is that when a zero value is found, the inner loop stops because the input data for the scRNA-seq is sparse. Since the counts of the samples are sorted in decreasing order, only the null values are ignored.
+The main difference with the RNA-seq experiment in the ssGSEA function (Figure \ref{fig:gsea-algorithm}) is that when a zero value is found, the inner loop stops because the input data for the scRNA-seq is sparse. Since the counts of the samples are sorted in decreasing order, only the null values are ignored.
 
 
 \begin{figure}[h]
@@ -312,13 +316,12 @@ All R scripts used for each section can be found on GitHub \cite{thesis-github}.
 \end{table}
 
 \ptitle{Psoriasis non-lesional vs psoriasis lesional} The results for the most differentially expressed gene sets between the samples with Psoriasis
-lesional and Psoriasis non-lesional can be found in the table (\ref{tab:pssolvspsol}).
+lesional and Psoriasis non-lesional can be found in the Table \ref{tab:psolvspsonl}.
 
 The most differentially expressed gene set is GO:2000330. This Gene Ontology term is defined as: \textit{Any process that activates or increases the frequency, rate or extent of T-helper 17-cell lineage commitment} \cite{go:2000330}. This cell type is associated with autoimmune diseases such as multiple sclerosis, rheumatoid arthritis, and psoriasis \cite{wiki:Th17}.
 
 \begin{table}[H]
 \centering
-\label{tab:pssolvspsol}
 \caption{Most different expressed gene sets in Psoriasis non-lesional and Psoriasis-lesional. All logFC values in the top 10 are negative, meaning these genes are downregulated in the Psoriasis non-lesional samples and upregulated in the Psoriasis lesional samples. The adjusted p-values of this comparison are low. Therefore, the results are significant. The logFC indicates how much more or how much fewer times the gene set is represented in a log scale in the two phenotypes compared.}
 \begin{tabular}{ | c @{\hspace{0.3cm}} c @{\hspace{0.3cm}} c @{\hspace{0.3cm}} c | }
     \hline
@@ -337,16 +340,17 @@ The most differentially expressed gene set is GO:2000330. This Gene Ontology ter
     GO:0002816 & -220.1325 & 99.53479 & 6.638296e-29 \\
     \hline
 \end{tabular}
+\label{tab:psolvspsonl}
 \end{table}
 
 \ptitle{Control vs Psoriasis non-lesional}
 
-In the case of CTRL vs Psoriasis non-lesional, the most overrepresented gene is GO:0035373. The most upregulated and downregulated gene sets are less relevant than the previous comparison. This is expected since these two phenotypes have more in common. In addition, the p-values are much larger, meaning the tests are less representative.
+In the case of CTRL vs Psoriasis non-lesional, the most overrepresented gene set is GO:0035373. This gene set is defined as: \textit{Binding to a chondroitin sulfate proteoglycan, any proteoglycan containing chondroitin sulfate as the glycosaminoglycan carbohydrate unit.} \cite{go:0035373}. The expression level of chondroitin sulfate (C6st-1) may be associated with susceptibility to psoriasis \cite{Kitazawa2021}.
 
-\begin{table}[H]
+\begin{table}[h!]
 \centering
-\label{tab:pssolvspsol}
-\caption{Most different expressed gene sets in Control and Psoriasis-lesional. Three upregulated and seven downregulated gene sets are in the Control samples in these cases. The p-values for this test are much larger than in the previous comparison, meaning that the relevance of this comparison is less important.}
+\label{tab:ctrlvspsnl}
+\caption{Most different expressed gene sets in Control and Psoriasis-lesional. Three upregulated and seven downregulated gene sets are in the Control samples in these cases. The p-values for this test are much larger than in the previous comparison.}
 \begin{tabular}{ | c @{\hspace{0.3cm}} c @{\hspace{0.3cm}} c @{\hspace{0.3cm}} c | }
     \hline
     GO term & logFC & AveExpr & Adj. P value \\
@@ -369,11 +373,11 @@ In the case of CTRL vs Psoriasis non-lesional, the most overrepresented gene is 
 
 \subsection{Gene set analysis vs gene analysis}
 
-The results in the previous section correspond to what would be expected when not using a rank-based statistic. This section compares the two methods using the clustering \texttt{Seurat} tools.
+The results in the previous section correspond to what we get when using a rank-based statistic. This section compares the two methods using the clustering \texttt{Seurat} tools.
 
-The two resulting sets of clusters, one obtained from the expression matrix (\ref{fig:rna-expr-clusters}) and the other from the ES matrix (\ref{fig:rna-expr-clusters}), have a similar meaning but a really different shape. In the case of the ES cluster, the AD lesional and Psoriasis lesional are far more apart from the rest of the clusters. That is not the case for the expression matrix clusters, where these two sample groups are separated and closer two the rest of the groups. That means the ES clusters make a stronger differentiation between lesional and healthy/non-lesional groups, whether the expression matrix clusters make each individual group more detailed.
+The two resulting sets of clusters, one obtained from the expression matrix, Figure \ref{fig:rna-expr-clusters} and the other from the ES matrix, Figure \ref{fig:rna-expr-clusters}, have a similar meaning but a really different shape. In the case of the ES cluster, the AD lesional and Psoriasis lesional are far more apart from the rest of the clusters. That is not the case for the expression matrix clusters, where these two sample groups are separated and closer two the rest of the groups. That means the ES clusters make a stronger differentiation between lesional and healthy/non-lesional groups, whether the expression matrix clusters make each individual group more detailed.
 
-The heatmaps (\ref{fig:rna-expr-heatmap}) (\ref{fig:rna-es-heatmap}), on the other hand, do have not as substantial differences. The genes upregulated in the lesional groups are downregulated in the healthy/non-lesional groups. The light yellow cell represents that the gene/gene set is upregulated in that sample, and light purple is downregulated.
+The heatmaps, Figures \ref{fig:rna-expr-heatmap} and \ref{fig:rna-es-heatmap}, on the other hand, do have not as substantial differences. The genes upregulated in the lesional groups are downregulated in the healthy/non-lesional groups.
 
 \begin{figure}[h]
 \centering
@@ -382,10 +386,10 @@ The heatmaps (\ref{fig:rna-expr-heatmap}) (\ref{fig:rna-es-heatmap}), on the oth
 \label{fig:rna-expr-clusters}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
 \centering
 \includegraphics[clip=true,width=7cm]{img/GSE121212-expr-heatmap.png}
-\caption{Genes heatmap from the GSE121212 expression matrix}
+\caption{Genes heatmap from the GSE121212 expression matrix. The light yellow cell represents that the gene/gene set is upregulated in that sample, and light purple is downregulated.}
 \label{fig:rna-expr-heatmap}
 \end{figure}
 
@@ -412,7 +416,7 @@ It has approximately $10\cdot10^9$ counts, that is, $10^3$ times larger than the
 
 \ptitle{Steps} The first step, as in the RNA-seq experiment, was to run the GSEA. The running time was 16h and 46min using 8 threads, with an average of 4.9 GB of RAM.
 
-The count matrix was split into 100 chunks, and then the Enrichment Score (ES) was computed for all of them. After, these results were filtered by choosing the most variable gene sets across the samples in these same results. Specifically, the first 1000 thousand out of 22736 gene sets were chosen according to the variance results obtained (\ref{fig:scrna-es-stddev}). This first section was run using \texttt{gseacc}.
+The count matrix was split into 100 chunks, and then the Enrichment Score (ES) was computed for all of them. After, these results were filtered by choosing the most variable gene sets across the samples in these same results. Specifically, the first 1000 thousand out of 22736 gene sets were chosen according to the variance results obtained, Figure \ref{fig:scrna-es-stddev}. This first section was run using \texttt{gseacc}.
 
 The next step was to run the clustering algorithms for the ES results. This section was entirely done using the \texttt{Seurat} package. The standard \texttt{Seurat} pipeline was followed. Only the finding of variable features was skipped since they were obtained when filtering the gene sets using \texttt{gseacc}.
 
@@ -423,9 +427,9 @@ The next step was to run the clustering algorithms for the ES results. This sect
 \label{fig:scrna-es-stddev}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
-\label{tab:pssolvspsol}
+\label{tab:vargenesets}
 \caption{Top 10 most variable gene sets. As expected, most of these gene sets are related to cell structure since the dataset contains samples of different skin cells. For instance, GO:0005622 is defined as follows \textit{A component of a cell contained within (but not including) the plasma membrane. In eukaryotes, it includes the nucleus and cytoplasm.}}
 \begin{tabular}{ | c @{\hspace{0.6cm}} c | }
     \hline
@@ -446,7 +450,7 @@ The next step was to run the clustering algorithms for the ES results. This sect
 \end{tabular}
 \end{table}
 
-\ptitle{Cell clustering} To check that the clusters obtained from the ES matrix (\ref{fig:scrna-es-clusters}), the labels of the cells that are present in the count matrix dataset (\ref{seq:scrna-dataset}) were used (\ref{fig:scrna-es-cells}) to be able to analyse the similarities and the differences between the two clustering methods. To have more specific results, a table with the number of overlapping cell samples between the two methods was made (\ref{tab:clustercounts}).
+\ptitle{Cell clustering} To check that the clusters obtained from the ES matrix (Figure \ref{fig:scrna-es-clusters}), the labels of the cells that are present in the count matrix dataset (\ref{seq:scrna-dataset}) were used (Figure \ref{fig:scrna-es-cells}) to be able to analyse the similarities and the differences between the two clustering methods. To have more specific results, a table with the number of overlapping cell samples between the two methods was made, Table \ref{tab:clustercounts}.
 
 \begin{figure}[h]
 \centering
@@ -464,7 +468,6 @@ The next step was to run the clustering algorithms for the ES results. This sect
 
 \begin{table}[htb]
 \centering
-\label{tab:clustercounts}
 \caption{Each table's cell represents the number of cell samples that overlap with the cluster obtained running \texttt{Seurat} from the Gene Set Enrichment Score table and the cell type labels obtained from the original dataset}
 \begin{adjustwidth}{-3cm}{-1cm}
 \begin{tabular*}{\paperwidth-0.5cm}{| c | @{\hskip 6pt\extracolsep{\stretch{1}}}*{22}{r} |}
@@ -506,10 +509,10 @@ Diff\_KC &   2 &  19 & 6186 & 6765 &  50 & 9490 &  11 &  31 &   6 & 3325 &  27 &
   VE3 &   0 &   3 &   2 &   0 &  23 &   0 &   1 &  69 &   1 &  22 &   1 &  72 &   5 &  46 &   0 &   0 &   2 & 355 &  20 &   1 &   2 &   4 \\
   Schwann\_1 &   0 &   0 &   0 &   2 &  86 &   0 &   0 &   1 &   0 &  15 &   0 &  12 &   0 &   0 &   0 &  18 &  14 &   1 &   0 &   0 &   0 &   0 \\
   Mast\_cell &  43 &  96 &   2 &   1 &  19 &   2 &   1 &   0 &   1 &  48 &   1 & 315 &   0 &   2 &  24 &   1 &   1 &   0 &   0 &   0 &   0 &   0 \\
-   \hline
-    \hline
+  \hline
 \end{tabular*}
 \end{adjustwidth}
+\label{tab:clustercounts}
 \end{table}
 
 \section{Conclusions}
