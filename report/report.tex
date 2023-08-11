@@ -76,10 +76,6 @@ Gene set enrichment analyses use rank-based statistics to test whether related g
 \maketitle
 \section{\label{sec:Start}Introduction}
 
-\subsection{Objectives} This thesis aims to develop efficient algorithms for computing rank-based statistics for thousands of gene sets on tens of thousands of gene lists and use these as a basis for analysing data from single-cell sequencing and RNA sequencing experiments.
-
-The current single-cell sequencing analysis landscape does not include rank-based statistics in the data preprocessing steps. This thesis aims to find the differences in the single-cell sequencing analysis when using and not using these algorithms.
-
 \subsection{Background}
 
 \ptitle{RNA sequencing} RNA sequencing (RNA-seq) is a powerful experimental technique for studying gene expression and transcriptomics. It allows researchers to quantify and analyse the RNA molecules present in a biological sample, providing insights into the transcriptional activity of genes.
@@ -90,6 +86,12 @@ Once differentially expressed genes are identified, further analyses can be perf
 
 
 \vspace{2mm}
+
+% TODO readers guide
+% TODO rank based statistics intro
+% contingency table
+% 2                                sum(Diff_KC) - 2
+% sum(cluster 1) - 2     sum(all other cells)
 
 \ptitle{Single-cell sequencing} \cite{triumphs-and-limitations-scRNA} Single-cell sequencing (scRNA-seq) examines the sequence information from individual cells with optimized next-generation sequencing technologies, providing a higher resolution of cellular differences and a better understanding of the function of an individual cell in the context of its microenvironment.
 
@@ -103,6 +105,10 @@ These improvements in the technology for sampling expression cells generate some
  \end{itemize}
 
 \end{itemize}
+
+\subsection{Objectives} This thesis aims to develop efficient algorithms for computing rank-based statistics for thousands of gene sets on tens of thousands of gene lists and use these as a basis for analysing data from single-cell sequencing and RNA sequencing experiments.
+
+The current single-cell sequencing analysis landscape does not include rank-based statistics in the data preprocessing steps. This thesis aims to find the differences in the single-cell sequencing analysis when using and not using these algorithms.
 
 \subsection{Methods}
 
@@ -195,13 +201,29 @@ Graph-based clustering methods leverage graph representation of the data, where 
  \item Low RAM usage in large scRNA-seq datasets
 \end{itemize}
 
-The source code and its corresponding documentation are in \cite{gseacc-github}. There are two different pieces of documentation, one for the package source code (C++) and another one for the R functions that can be accessed while running R.
+The source code and its corresponding documentation are in \cite{gseacc-github}. There are two different pieces of documentation, one for the package source code (C++) and another one for the R functions that can be accessed while running R (Figure \ref{fig:gseacc-structure}).
+
+The package is structured in to two C++ classes and a C++ file to define what is exported to R. The two classes are \texttt{GseaRcpp} and \texttt{Gsea}, the export file is \texttt{Rcpp.cc}:
+\begin{itemize}
+ \item \texttt{GseaRcpp}: Class in charge of translating R data structures into C++ structures. It does not do any kind of computation, just translation.
+ \item \texttt{Gsea}: Class in charge of all ssGsea computation, it contains the normalization functions, and the rank-statistic computation function for scRNA-seq and RNA-seq data.
+ \item \texttt{Rcpp.cc}: File that containd the necessary exports for R to be able to use the \texttt{Gsea} class and the functions defined in this file. There is 2 functions defined in this file, two for reading and writing gene sets in a comma-separated format and another one for reading CSV files, since the R version of it is really slow for big files.
+\end{itemize}
+
+\begin{figure}[h]
+\centering
+\includegraphics[clip=true,width=6cm]{img/gseacc-structure.png}
+\caption{Gseacc package structure and its possible usages}
+\label{fig:gseacc-structure}
+\end{figure}
+
+The reason of this structure is to make the \texttt{C++ Gsea} implementation independent of the \texttt{R} includes, so it can be used with \texttt{C++} files only by reading a configuration file (\texttt{gsea.config}) that indicates the location of the input files.
 
 \subsection{RNA sequencing}
 
 \ptitle{gseacc} For the RNA-seq experiments, \texttt{gseacc} uses the Kolmogorov-Smirnov as the rank statistic (\ref{sec:ks-statistic}). Before running it, the data has to be normalized and sorted. \texttt{gseacc} normalizes the data by first applying an RPM (Rounds Per Milion) normalization for all the samples across the genes, meaning that the sum of the counts in any sample is one million. Then it means-centres the genes across the samples by subtracting the gene's mean expression to every sample.
 
-\begin{figure}[H]
+\begin{figure}[h]
 \caption{Pseudocode of ssGSEA function for RNA-seq in \texttt{gseacc}}
 \label{fig:gsea-algorithm}
 \begin{algorithmic}[1]
@@ -298,7 +320,7 @@ All R scripts used for each section can be found on GitHub \cite{thesis-github}.
 
 \ptitle{Steps} The Enrichment Score matrix was obtained using gseacc \cite{gse121212-go-es} and analysed using Limma to get the most representing gene sets when comparing different phenotypes.
 
-\begin{table}[H]
+\begin{table}[h]
 \centering
 \label{tab:pssolvspsol}
 \caption{Scalability for the Enrichment Score computation for the GSE121212 experiment and all the 22962 gene sets from the Gene Ontology. The speedup is the improvement in speed of execution for the execution with one thread.}
@@ -386,7 +408,7 @@ The heatmaps, Figures \ref{fig:rna-expr-heatmap} and \ref{fig:rna-es-heatmap}, o
 \label{fig:rna-expr-clusters}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[h]
 \centering
 \includegraphics[clip=true,width=7cm]{img/GSE121212-expr-heatmap.png}
 \caption{Genes heatmap from the GSE121212 expression matrix. The light yellow cell represents that the gene/gene set is upregulated in that sample, and light purple is downregulated.}
@@ -427,7 +449,7 @@ The next step was to run the clustering algorithms for the ES results. This sect
 \label{fig:scrna-es-stddev}
 \end{figure}
 
-\begin{table}[H]
+\begin{table}[h]
 \centering
 \label{tab:vargenesets}
 \caption{Top 10 most variable gene sets. As expected, most of these gene sets are related to cell structure since the dataset contains samples of different skin cells. For instance, GO:0005622 is defined as follows \textit{A component of a cell contained within (but not including) the plasma membrane. In eukaryotes, it includes the nucleus and cytoplasm.}}
